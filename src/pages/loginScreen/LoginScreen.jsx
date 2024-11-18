@@ -4,9 +4,29 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import styled from "styled-components";
 
-// Hardcoded credentials
-const ADMIN_EMAIL = "adminlocal23test@gmail.com";
-const ADMIN_PASSWORD = "admin123";
+async function loginUser(email, password) {
+  try {
+    const response = await fetch(
+      "https://indigo-rhapsody-backend-ten.vercel.app/user/adminLogin",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Login failed.");
+    }
+
+    return await response.json();
+  } catch (error) {
+    throw new Error(error.message || "Something went wrong.");
+  }
+}
 
 function Loginscreen() {
   const [email, setEmail] = useState("");
@@ -15,20 +35,23 @@ function Loginscreen() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn");
-    if (isLoggedIn === "true") {
+    const userId = localStorage.getItem("userId");
+    if (userId) {
       navigate("/dashboard");
     }
   }, [navigate]);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // Check if the entered email and password match the hardcoded credentials
-    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      localStorage.setItem("userId", "admin");
-      localStorage.setItem("isLoggedIn", "true"); // Set isLoggedIn to true
+    try {
+      const data = await loginUser(email, password);
+
+
+      localStorage.setItem("userId", data.userId);
+ 
+
 
       toast.success("Login successful!", {
         position: "top-right",
@@ -36,11 +59,11 @@ function Loginscreen() {
       });
 
       navigate("/dashboard");
-    } else {
-      toast.error("Invalid email or password.");
+    } catch (error) {
+      toast.error(error.message || "Invalid email or password.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
@@ -94,7 +117,7 @@ function Loginscreen() {
 
 export default Loginscreen;
 
-// Styled Components
+// Styled Components (Unchanged)
 const LoginScreenWrap = styled.div`
   display: flex;
   min-height: 100vh;
