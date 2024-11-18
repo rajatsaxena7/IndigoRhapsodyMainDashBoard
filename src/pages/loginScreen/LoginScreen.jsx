@@ -17,7 +17,7 @@ function Loginscreen() {
   useEffect(() => {
     const isLoggedIn = localStorage.getItem("isLoggedIn");
     if (isLoggedIn === "true") {
-      navigate("/");
+      navigate("/dashboard");
     }
   }, [navigate]);
 
