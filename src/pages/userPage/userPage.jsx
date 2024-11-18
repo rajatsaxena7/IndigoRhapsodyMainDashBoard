@@ -1,5 +1,5 @@
 import React from "react";
-import { UserPageWrap } from "./userPage.styles";
+import { UserPageWrap } from "./userPage.Styles";
 import ManageUserCards from "../../components/ManageUsers/Cards/manageUserCards";
 import ManageUserMap from "../../components/ManageUsers/Map/manageUserMap";
 import ManageuserTable from "../../components/ManageUsers/Table/manageUserTable";
