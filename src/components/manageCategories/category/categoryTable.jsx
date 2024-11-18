@@ -55,10 +55,10 @@ function CategoryTable() {
       form.setFieldsValue({
         name: category.name,
       });
-      console.log("Editing category:", category);
+
     } else {
       form.resetFields();
-      console.log("Adding new category.");
+ 
     }
     setFile(null);
   };

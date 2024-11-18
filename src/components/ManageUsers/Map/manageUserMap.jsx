@@ -26,7 +26,7 @@ function ManageUserMap() {
     const fetchData = async () => {
       try {
         const data = await getDataByStates();
-        console.log("Fetched state data:", data.usersByState); // Debugging
+
         setStateData(data.usersByState);
       } catch (error) {
         console.error("Error fetching state data:", error);
@@ -41,7 +41,7 @@ function ManageUserMap() {
     const state = stateData.find(
       (item) => item._id.toLowerCase() === stateName.toLowerCase()
     );
-    console.log(`State: ${stateName}, Count: ${state ? state.count : 0}`); // Debugging
+
     return state ? state.count : 0;
   };
 
@@ -61,9 +61,6 @@ function ManageUserMap() {
     layer.bindTooltip(`<strong>${stateName}</strong><br />Users: ${count}`, {
       sticky: true,
     });
-
-    // Log each state's style application for debugging
-    console.log(`Applying style for ${stateName}: color ${fillColor}`);
   };
 
   return (

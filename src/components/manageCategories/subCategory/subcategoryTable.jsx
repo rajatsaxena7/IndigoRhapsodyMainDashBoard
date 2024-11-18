@@ -74,10 +74,10 @@ function SubCategoryTable() {
         name: subcategory.name,
         categoryId: subcategory.categoryId?._id, // Use optional chaining
       });
-      console.log("Editing subcategory:", subcategory);
+
     } else {
       form.resetFields();
-      console.log("Adding new subcategory.");
+
     }
     setFile(null);
   };
@@ -86,19 +86,19 @@ function SubCategoryTable() {
     setIsModalVisible(false);
     form.resetFields();
     setFile(null);
-    console.log("Modal closed. Resetting form and file state.");
+ 
   };
 
   const handleFileChange = (info) => {
-    console.log("Upload Change Event:", info);
+
 
     const { fileList } = info;
 
     if (fileList.length === 0) {
       setFile(null);
-      console.log("File removed. Setting file state to null.");
+    
     } else {
-      console.log("File is set via beforeUpload.");
+    
       // No action needed since file is set in beforeUpload
     }
   };
@@ -107,19 +107,19 @@ function SubCategoryTable() {
     try {
       const timestamp = Date.now();
       const fileRef = ref(storage, `subcategory/${timestamp}_${file.name}`);
-      console.log("Uploading to Firebase Storage at:", fileRef.fullPath);
+   
 
       // Upload the file
       const snapshot = await uploadBytes(fileRef, file);
-      console.log("Upload successful. Snapshot:", snapshot);
+   
 
       // Get the download URL
       const url = await getDownloadURL(fileRef);
-      console.log("Download URL obtained:", url);
+
 
       return url;
     } catch (error) {
-      console.error("Upload failed:", error);
+    
       throw new Error(`Upload failed: ${error.message}`);
     }
   };
@@ -133,14 +133,14 @@ function SubCategoryTable() {
 
       // Only upload a new image if there's a new file selected
       if (file) {
-        console.log("File detected. Starting upload...");
+      
         image = await uploadImageToFirebase(file);
-        console.log("Image URL after upload:", image);
+      
       } else if (modalType === "add" && !image) {
         // If adding a new subcategory, ensure there is an image
         throw new Error("Please upload an image.");
       } else {
-        console.log("No new file uploaded. Using existing image URL:", image);
+     
       }
 
       const subcategoryData = {
@@ -150,7 +150,7 @@ function SubCategoryTable() {
       };
 
       // Debugging: Log the subcategoryData
-      console.log("Subcategory Data to be sent:", subcategoryData);
+     
 
       // Validate subcategoryData before sending
       if (!subcategoryData.name || !subcategoryData.image) {
@@ -168,7 +168,7 @@ function SubCategoryTable() {
       fetchSubCategories();
       handleCancel();
     } catch (error) {
-      console.error("Error saving subcategory:", error);
+     
       message.error(error.message || "Error saving subcategory");
     } finally {
       setUploading(false); // End uploading indicator
@@ -194,7 +194,7 @@ function SubCategoryTable() {
       );
       fetchSubCategories();
     } catch (error) {
-      console.error("Error updating approval status:", error);
+     
       message.error("Error updating approval status");
     }
   };
@@ -328,7 +328,7 @@ function SubCategoryTable() {
             <Upload
               beforeUpload={(file) => {
                 setFile(file);
-                console.log("File in beforeUpload:", file);
+              
                 return false; // Prevent automatic upload
               }}
               onChange={handleFileChange}

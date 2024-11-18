@@ -36,7 +36,7 @@ function ManageDesignerCard() {
         designerId,
         isApproved
       );
-      console.log("Approval status updated:", updatedData);
+   
     } catch (error) {
       console.error("Error updating approval status:", error.message);
     }
