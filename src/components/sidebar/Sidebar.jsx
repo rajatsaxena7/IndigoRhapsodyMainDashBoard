@@ -12,6 +12,7 @@ import { FaBorderAll } from "react-icons/fa";
 import { TbCategoryPlus } from "react-icons/tb";
 import { LiaVideoSolid } from "react-icons/lia";
 import { PiSignOutLight } from "react-icons/pi";
+import { SiContentful } from "react-icons/si";
 
 function Sidebar() {
   const isSidebarOpen = useSelector((state) => state.isSidebarOpen);
@@ -124,6 +125,18 @@ function Sidebar() {
                   <LiaVideoSolid style={{ color: "black" }} />
                 </span>
                 <span className="menu-link-text">Videos</span>
+              </NavLink>
+            </li>
+            <li className="menu-item">
+              <NavLink
+                to="/banner"
+                activeClassName="active"
+                className="menu-link"
+              >
+                <span className="menu-link-icon">
+                  <SiContentful style={{ color: "black" }} />
+                </span>
+                <span className="menu-link-text">Content</span>
               </NavLink>
             </li>
             <li className="menu-item">

@@ -168,7 +168,7 @@ const VideoContent = () => {
             onClick={() => handleApproveContent(record._id)}
             disabled={record.is_approved}
           >
-            Re-Approve
+            Approve
           </Button>
         </>
       ),

@@ -16,30 +16,6 @@ function AppBar() {
           <h3 className="appbar-title">Dashboard</h3>
         </div>
         <div className="appbar-right">
-          <div className="appbar-search">
-            <form>
-              <div className="input-group">
-                <span
-                  className="input-icon"
-                  onClick={handleInputControlVisibility}
-                >
-                  <img
-                    // src={Icons.SearchBlue}
-                    alt=""
-                    className="input-icon-img"
-                  />
-                </span>
-                <input
-                  type="text"
-                  placeholder="Search Here ..."
-                  //   value={searchQuery}
-                  //   onChange={handleSearchChange}
-                  className={`input-control ${"show-input-control"}`}
-                />
-              </div>
-            </form>
-          </div>
-
           {/* Notification Bell Icon */}
           <button className="notification-bell">
             <MdNotificationsNone size={24} />

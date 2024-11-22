@@ -1,7 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { CouponPageTableWrap } from "./couponPage.styles";
-import { Table, Input, Tag, Button, Space, message, Modal, Form } from "antd";
+import {
+  Table,
+  Input,
+  Tag,
+  Button,
+  Space,
+  message,
+  Modal,
+  Form,
+  DatePicker,
+} from "antd";
 import { GetCoupons, DeleteCoupon } from "../../../service/couponApi";
+import moment from "moment";
 
 function CouponPageTable() {
   const [coupons, setCoupons] = useState([]);
@@ -37,6 +48,11 @@ function CouponPageTable() {
 
   const handleAddCoupon = async (values) => {
     try {
+      const formattedValues = {
+        ...values,
+        expiryDate: values.expiryDate.toISOString(), // Convert moment to ISO string
+      };
+
       const response = await fetch(
         `https://indigo-rhapsody-backend-ten.vercel.app/coupon/`, // Adjust endpoint if needed
         {
@@ -44,7 +60,7 @@ function CouponPageTable() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(values),
+          body: JSON.stringify(formattedValues),
         }
       );
       const newCoupon = await response.json();
@@ -100,6 +116,11 @@ function CouponPageTable() {
     },
   ];
 
+  const disablePastDates = (current) => {
+    // Disable dates before today
+    return current && current < moment().startOf("day");
+  };
+
   return (
     <CouponPageTableWrap>
       <div style={{ marginBottom: 16, textAlign: "right" }}>
@@ -145,7 +166,11 @@ function CouponPageTable() {
             name="expiryDate"
             rules={[{ required: true, message: "Please select expiry date" }]}
           >
-            <Input type="date" />
+            <DatePicker
+              format="YYYY-MM-DD"
+              disabledDate={disablePastDates}
+              style={{ width: "100%" }}
+            />
           </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit" style={{ width: "100%" }}>
