@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { CouponPageTableWrap } from "./couponPage.styles";
 import {
   Table,
   Input,
@@ -11,8 +10,11 @@ import {
   Form,
   DatePicker,
 } from "antd";
+import { ExclamationCircleOutlined } from "@ant-design/icons";
 import { GetCoupons, DeleteCoupon } from "../../../service/couponApi";
 import moment from "moment";
+
+const { confirm } = Modal;
 
 function CouponPageTable() {
   const [coupons, setCoupons] = useState([]);
@@ -23,10 +25,16 @@ function CouponPageTable() {
   const fetchCoupons = async () => {
     try {
       setLoading(true);
-      const data = await GetCoupons();
-      setCoupons(data); // Use directly if data is an array, else adjust
+      const response = await GetCoupons();
+      if (response && Array.isArray(response.data)) {
+        setCoupons(response.data);
+      } else {
+        console.error("Invalid data format", response);
+        message.error("Unexpected response format from server");
+      }
       setLoading(false);
     } catch (error) {
+      console.error("Error fetching coupons:", error);
       message.error("Error fetching coupons");
       setLoading(false);
     }
@@ -36,25 +44,36 @@ function CouponPageTable() {
     fetchCoupons();
   }, []);
 
-  const handleDelete = async (couponId) => {
-    try {
-      await DeleteCoupon(couponId);
-      setCoupons(coupons.filter((coupon) => coupon._id !== couponId));
-      message.success("Coupon deleted successfully");
-    } catch (error) {
-      message.error("Error deleting coupon");
-    }
+  const showDeleteConfirm = (couponId) => {
+    confirm({
+      title: "Are you sure you want to delete this coupon?",
+      icon: <ExclamationCircleOutlined />,
+      content: "This action cannot be undone.",
+      okText: "Yes, Delete",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: async () => {
+        try {
+          await DeleteCoupon(couponId);
+          setCoupons(coupons.filter((coupon) => coupon._id !== couponId));
+          message.success("Coupon deleted successfully");
+        } catch (error) {
+          console.error("Error deleting coupon", error);
+          message.error("Error deleting coupon");
+        }
+      },
+    });
   };
 
   const handleAddCoupon = async (values) => {
     try {
       const formattedValues = {
         ...values,
-        expiryDate: values.expiryDate.toISOString(), // Convert moment to ISO string
+        expiryDate: values.expiryDate.toISOString(),
       };
 
       const response = await fetch(
-        `https://indigo-rhapsody-backend-ten.vercel.app/coupon/`, // Adjust endpoint if needed
+        `https://indigo-rhapsody-backend-ten.vercel.app/coupon/`,
         {
           method: "POST",
           headers: {
@@ -64,18 +83,28 @@ function CouponPageTable() {
         }
       );
       const newCoupon = await response.json();
-      setCoupons([...coupons, newCoupon]); // Add new coupon to list
-      message.success("Coupon created successfully");
-      form.resetFields();
-      setIsModalVisible(false);
+
+      if (response.ok) {
+        setCoupons([...coupons, newCoupon]);
+        message.success("Coupon created successfully");
+        form.resetFields();
+        setIsModalVisible(false);
+      } else {
+        throw new Error(newCoupon.message || "Error creating coupon");
+      }
     } catch (error) {
-      message.error("Error creating coupon");
+      console.error("Error creating coupon", error);
+      message.error(error.message || "Error creating coupon");
     }
+  };
+
+  const disablePastDates = (current) => {
+    return current && current < moment().startOf("day");
   };
 
   const columns = [
     {
-      title: "Coupon Title",
+      title: "Coupon Code",
       dataIndex: "couponCode",
       key: "couponCode",
     },
@@ -95,34 +124,24 @@ function CouponPageTable() {
       ),
     },
     {
-      title: "Used By",
-      dataIndex: "__v",
-      key: "__v",
-    },
-    {
       title: "Expiry Date",
       dataIndex: "expiryDate",
       key: "expiryDate",
-      render: (date) => new Date(date).toLocaleDateString(),
+      render: (date) => moment(date).format("YYYY-MM-DD"),
     },
     {
       title: "Actions",
       key: "actions",
-      render: (text, record) => (
-        <Button danger onClick={() => handleDelete(record._id)}>
+      render: (_, record) => (
+        <Button danger onClick={() => showDeleteConfirm(record._id)}>
           Delete
         </Button>
       ),
     },
   ];
 
-  const disablePastDates = (current) => {
-    // Disable dates before today
-    return current && current < moment().startOf("day");
-  };
-
   return (
-    <CouponPageTableWrap>
+    <div>
       <div style={{ marginBottom: 16, textAlign: "right" }}>
         <Space>
           <Button type="primary" onClick={() => setIsModalVisible(true)}>
@@ -132,7 +151,7 @@ function CouponPageTable() {
       </div>
       <Table
         columns={columns}
-        dataSource={coupons}
+        dataSource={Array.isArray(coupons) ? coupons : []}
         rowKey="_id"
         loading={loading}
         pagination={{ pageSize: 10 }}
@@ -146,7 +165,7 @@ function CouponPageTable() {
         onCancel={() => setIsModalVisible(false)}
         footer={null}
       >
-        <Form form={form} onFinish={handleAddCoupon}>
+        <Form form={form} onFinish={handleAddCoupon} layout="vertical">
           <Form.Item
             label="Coupon Code"
             name="couponCode"
@@ -157,7 +176,15 @@ function CouponPageTable() {
           <Form.Item
             label="Amount"
             name="couponAmount"
-            rules={[{ required: true, message: "Please enter amount" }]}
+            rules={[
+              { required: true, message: "Please enter amount" },
+              {
+                validator: (_, value) =>
+                  value >= 0
+                    ? Promise.resolve()
+                    : Promise.reject(new Error("Amount cannot be negative")),
+              },
+            ]}
           >
             <Input type="number" />
           </Form.Item>
@@ -179,7 +206,7 @@ function CouponPageTable() {
           </Form.Item>
         </Form>
       </Modal>
-    </CouponPageTableWrap>
+    </div>
   );
 }
 

@@ -5,61 +5,21 @@ import {
   ApproveVideo,
   GetAllVideos,
   ApproveVideoContent,
-} from "../../service/videoApi"; // API service imports
+} from "../../service/videoApi";
 import { VideoContentWrap } from "./videoContent.Styles";
 
 const { Search } = Input;
 
-// Reusable VideoTable Component - Display video list with actions
-const VideoTable = ({ data, columns, pagination }) => (
-  <Table
-    columns={columns}
-    dataSource={data}
-    rowKey="_id"
-    pagination={pagination}
-  />
-);
-
-// Reusable VideoModal Component - Display video in a modal
-const VideoModal = ({ isVisible, videoUrl, onClose }) => (
-  <Modal
-    title="Video Player"
-    visible={isVisible}
-    footer={null}
-    onCancel={onClose}
-  >
-    {videoUrl ? (
-      videoUrl.includes("youtube") ? (
-        <iframe
-          width="100%"
-          height="315"
-          src={videoUrl.replace("watch?v=", "embed/")}
-          title="YouTube video player"
-          frameBorder="0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        ></iframe>
-      ) : (
-        <video width="100%" controls>
-          <source src={videoUrl} type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
-      )
-    ) : (
-      <p>No video available</p>
-    )}
-  </Modal>
-);
-
-// Main VideoContent Component
 const VideoContent = () => {
   const [videoRequests, setVideoRequests] = useState([]);
   const [approvedVideos, setApprovedVideos] = useState([]);
   const [filteredVideoRequests, setFilteredVideoRequests] = useState([]);
+  const [filteredApprovedVideos, setFilteredApprovedVideos] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(true);
   const [loadingApproved, setLoadingApproved] = useState(true);
   const [errorRequests, setErrorRequests] = useState(null);
   const [errorApproved, setErrorApproved] = useState(null);
+  const [searchValue, setSearchValue] = useState(""); // New search value state
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [currentVideoUrl, setCurrentVideoUrl] = useState(null);
   const [viewModalVisible, setViewModalVisible] = useState(false);
@@ -80,6 +40,7 @@ const VideoContent = () => {
       try {
         const approvedData = await GetAllVideos();
         setApprovedVideos(approvedData.videos || []);
+        setFilteredApprovedVideos(approvedData.videos || []);
       } catch (err) {
         setErrorApproved(err.message);
       } finally {
@@ -89,6 +50,24 @@ const VideoContent = () => {
 
     fetchVideos();
   }, []);
+
+  // Filter videos based on the search query
+  const handleSearch = (value) => {
+    setSearchValue(value);
+    const lowerCaseValue = value.toLowerCase();
+
+    // Filter video requests
+    const filteredRequests = videoRequests.filter((video) =>
+      video.userId?.displayName?.toLowerCase().includes(lowerCaseValue)
+    );
+    setFilteredVideoRequests(filteredRequests);
+
+    // Filter approved videos
+    const filteredApproved = approvedVideos.filter((video) =>
+      video.userId?.displayName?.toLowerCase().includes(lowerCaseValue)
+    );
+    setFilteredApprovedVideos(filteredApproved);
+  };
 
   const handleView = (videoUrl) => {
     setCurrentVideoUrl(videoUrl);
@@ -133,13 +112,6 @@ const VideoContent = () => {
     }
   };
 
-  const handleSearch = (value) => {
-    const searchQuery = value.toLowerCase();
-    const filtered = videoRequests.filter((video) =>
-      video.userId.displayName.toLowerCase().includes(searchQuery)
-    );
-    setFilteredVideoRequests(filtered);
-  };
   const requestColumns = [
     {
       title: "Video URL",
@@ -152,10 +124,10 @@ const VideoContent = () => {
       ),
     },
     {
-      title: "Instagram ",
+      title: "Instagram",
       dataIndex: "instagram_User",
       key: "instagram_User",
-      render: (text) => text.instagram_User || "Na",
+      render: (text) => text.instagram_User || "N/A",
     },
     {
       title: "User",
@@ -222,11 +194,6 @@ const VideoContent = () => {
       key: "no_of_likes",
     },
     {
-      title: "Shares",
-      dataIndex: "no_of_Shares",
-      key: "no_of_Shares",
-    },
-    {
       title: "Created Date",
       dataIndex: "createdDate",
       key: "createdDate",
@@ -264,6 +231,8 @@ const VideoContent = () => {
         <h3>Video Applications</h3>
         <Search
           placeholder="Search by user name"
+          value={searchValue}
+          onChange={(e) => handleSearch(e.target.value)} // Filter dynamically as user types
           onSearch={handleSearch}
           enterButton
           style={{ width: 300 }}
@@ -275,31 +244,58 @@ const VideoContent = () => {
       ) : errorRequests ? (
         <p style={{ color: "red" }}> {errorRequests}</p>
       ) : (
-        <VideoTable
-          data={filteredVideoRequests}
+        <Table
+          dataSource={filteredVideoRequests}
           columns={requestColumns}
           pagination={{ pageSize: 10 }}
+          rowKey="_id"
         />
       )}
 
+      <h4>Approved Videos</h4>
       {loadingApproved ? (
         <p>Loading approved videos...</p>
       ) : errorApproved ? (
         <p style={{ color: "red" }}>Error: {errorApproved}</p>
       ) : (
-        <VideoTable
-          data={approvedVideos}
+        <Table
+          dataSource={filteredApprovedVideos}
           columns={approvedColumns}
           pagination={{ pageSize: 10 }}
+          rowKey="_id"
         />
       )}
 
-      <VideoModal
-        isVisible={isModalVisible}
-        videoUrl={currentVideoUrl}
-        onClose={() => setIsModalVisible(false)}
-      />
+      {/* Video Modal */}
+      <Modal
+        title="Video Player"
+        visible={isModalVisible}
+        footer={null}
+        onCancel={() => setIsModalVisible(false)}
+      >
+        {currentVideoUrl ? (
+          currentVideoUrl.includes("youtube") ? (
+            <iframe
+              width="100%"
+              height="315"
+              src={currentVideoUrl.replace("watch?v=", "embed/")}
+              title="YouTube video player"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            ></iframe>
+          ) : (
+            <video width="100%" controls>
+              <source src={currentVideoUrl} type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          )
+        ) : (
+          <p>No video available</p>
+        )}
+      </Modal>
 
+      {/* Video Details Modal */}
       <Modal
         title="Video Details"
         visible={viewModalVisible}

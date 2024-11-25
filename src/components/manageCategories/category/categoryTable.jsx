@@ -10,22 +10,21 @@ import {
   Input,
   Upload,
 } from "antd";
-import { UploadOutlined } from "@ant-design/icons";
+import { UploadOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import {
   GetCategories,
   DeleteCategory,
   AddCategory,
-  UpdateCategory,
 } from "../../../service/categoryApi";
 import { storage } from "../../../service/FirebaseService";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
+const { confirm } = Modal;
 
 function CategoryTable() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [modalType, setModalType] = useState("add");
-  const [currentCategory, setCurrentCategory] = useState(null);
   const [form] = Form.useForm();
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -47,19 +46,9 @@ function CategoryTable() {
     }
   };
 
-  const showModal = (type, category = null) => {
-    setModalType(type);
-    setCurrentCategory(category);
+  const showModal = () => {
     setIsModalVisible(true);
-    if (category) {
-      form.setFieldsValue({
-        name: category.name,
-      });
-
-    } else {
-      form.resetFields();
- 
-    }
+    form.resetFields();
     setFile(null);
   };
 
@@ -83,46 +72,48 @@ function CategoryTable() {
     return await getDownloadURL(fileRef);
   };
 
-  const handleAddEdit = async (values) => {
+  const handleAdd = async (values) => {
     try {
       setUploading(true);
 
-      let imageUrl = currentCategory?.imageUrl || "";
-      if (file) {
-        imageUrl = await uploadImageToFirebase(file);
-      } else if (modalType === "add") {
+      if (!file) {
         throw new Error("Please upload an image.");
       }
 
+      const imageUrl = await uploadImageToFirebase(file);
       const categoryData = { name: values.name, imageUrl };
 
-      if (modalType === "add") {
-        await AddCategory(categoryData);
-        message.success("Category added successfully");
-      } else {
-        await UpdateCategory(currentCategory._id, categoryData);
-        message.success("Category updated successfully");
-      }
-
+      await AddCategory(categoryData);
+      message.success("Category added successfully");
       fetchCategories();
       handleCancel();
     } catch (error) {
-      console.error("Error saving category:", error);
-      message.error(error.message || "Error saving category");
+      console.error("Error adding category:", error);
+      message.error(error.message || "Error adding category");
     } finally {
       setUploading(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await DeleteCategory(id);
-      message.success("Category deleted successfully");
-      fetchCategories();
-    } catch (error) {
-      console.error("Error deleting category:", error);
-      message.error("Error deleting category");
-    }
+  const showDeleteConfirm = (id) => {
+    confirm({
+      title: "Are you sure you want to delete this category?",
+      icon: <ExclamationCircleOutlined />,
+      content: "This action cannot be undone.",
+      okText: "Yes, Delete",
+      okType: "danger",
+      cancelText: "Cancel",
+      onOk: async () => {
+        try {
+          await DeleteCategory(id);
+          message.success("Category deleted successfully");
+          fetchCategories();
+        } catch (error) {
+          console.error("Error deleting category:", error);
+          message.error(error.message || "Error deleting category");
+        }
+      },
+    });
   };
 
   const columns = [
@@ -130,12 +121,11 @@ function CategoryTable() {
       title: "Category Name",
       dataIndex: "name",
       key: "name",
-      render: (text) => <a>{text}</a>,
     },
     {
       title: "Image",
-      dataIndex: "image",
-      key: "image",
+      dataIndex: "imageUrl",
+      key: "imageUrl",
       render: (imageUrl) =>
         imageUrl ? <Image width={50} src={imageUrl} alt="Category" /> : "N/A",
     },
@@ -150,10 +140,11 @@ function CategoryTable() {
       key: "actions",
       render: (_, record) => (
         <Space size="middle">
-          <Button type="link" onClick={() => showModal("edit", record)}>
-            Edit
-          </Button>
-          <Button type="link" danger onClick={() => handleDelete(record._id)}>
+          <Button
+            type="link"
+            danger
+            onClick={() => showDeleteConfirm(record._id)}
+          >
             Delete
           </Button>
         </Space>
@@ -170,7 +161,7 @@ function CategoryTable() {
           marginBottom: 16,
         }}
       >
-        <Button type="primary" onClick={() => showModal("add")}>
+        <Button type="primary" onClick={showModal}>
           Add Category
         </Button>
       </div>
@@ -184,14 +175,14 @@ function CategoryTable() {
       />
 
       <Modal
-        title={modalType === "add" ? "Add Category" : "Edit Category"}
+        title="Add Category"
         visible={isModalVisible}
         onCancel={handleCancel}
         onOk={() => form.submit()}
-        okText={modalType === "add" ? "Add" : "Update"}
+        okText="Add"
         confirmLoading={uploading}
       >
-        <Form form={form} layout="vertical" onFinish={handleAddEdit}>
+        <Form form={form} layout="vertical" onFinish={handleAdd}>
           <Form.Item
             name="name"
             label="Category Name"
@@ -206,7 +197,7 @@ function CategoryTable() {
             label="Upload Image"
             rules={[
               {
-                required: modalType === "add",
+                required: true,
                 message: "Please upload an image",
               },
             ]}

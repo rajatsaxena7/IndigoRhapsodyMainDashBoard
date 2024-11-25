@@ -52,13 +52,20 @@ const ManageDesignerTable = () => {
     );
     setFilteredDesigners(filtered);
   };
-
   const handleStatusFilterChange = (value) => {
     setStatusFilter(value);
-    const filtered = designers.filter(
-      (designer) => designer.is_approved === (value === "Approved")
-    );
-    setFilteredDesigners(filtered);
+
+    if (value === "All") {
+      // Reset to show all designers when "All" is selected
+      setFilteredDesigners(designers);
+    } else {
+      // Apply the filter based on approval status
+      const isApproved = value === "Approved";
+      const filtered = designers.filter(
+        (designer) => designer.is_approved === isApproved
+      );
+      setFilteredDesigners(filtered);
+    }
   };
 
   const handleExport = () => {

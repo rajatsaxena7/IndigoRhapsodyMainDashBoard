@@ -1,72 +1,49 @@
-export const GetCoupons = async () => {
+const apiRequest = async (url, options) => {
   try {
-    const response = await fetch(
-      `https://indigo-rhapsody-backend-ten.vercel.app/coupon/`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const response = await fetch(url, options);
+
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message);
+      throw new Error(errorData.message || "An error occurred");
     }
-    const data = await response.json();
-    return data;
+
+    return await response.json(); // Parse response data only once
   } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.message);
-    }
+    throw new Error(error.message || "An unexpected error occurred");
   }
+};
+export const GetCoupons = async () => {
+  return await apiRequest(
+    `https://indigo-rhapsody-backend-ten.vercel.app/coupon`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
 };
 
 export const DeleteCoupon = async (couponId) => {
-  try {
-    const response = await fetch(
-      `https://indigo-rhapsody-backend-ten.vercel.app/coupon/${couponId}`,
-      {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message);
+  return await apiRequest(
+    `https://indigo-rhapsody-backend-ten.vercel.app/coupon/${couponId}`,
+    {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
     }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(error.message);
-    }
-  }
+  );
 };
 
-export const Applycoupon = async (couponId) => {
-    try {
-      const response = await fetch(
-        `https://indigo-rhapsody-backend-ten.vercel.app/coupon/${couponId}`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message);
-      }
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(error.message);
-      }
+export const ApplyCoupon = async (couponId) => {
+  return await apiRequest(
+    `https://indigo-rhapsody-backend-ten.vercel.app/coupon/apply/${couponId}`,
+    {
+      method: "POST", // Use POST or PATCH for applying a coupon
+      headers: {
+        "Content-Type": "application/json",
+      },
     }
-  };
-  
+  );
+};
