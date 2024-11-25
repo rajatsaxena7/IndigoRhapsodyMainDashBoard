@@ -100,6 +100,25 @@ const VideoContent = () => {
     setViewModalVisible(true);
   };
 
+  const handleApprove = async (videoId, isApproved) => {
+    try {
+      await ApproveVideo(videoId, isApproved);
+      message.success("Video approved successfully");
+      setVideoRequests((prev) =>
+        prev.map((video) =>
+          video._id === videoId ? { ...video, is_approved: isApproved } : video
+        )
+      );
+      setFilteredVideoRequests((prev) =>
+        prev.map((video) =>
+          video._id === videoId ? { ...video, is_approved: isApproved } : video
+        )
+      );
+    } catch (error) {
+      message.error(`Failed to approve video: ${error.message}`);
+    }
+  };
+
   const handleApproveContent = async (videoId) => {
     try {
       await ApproveVideoContent(videoId);
@@ -121,6 +140,64 @@ const VideoContent = () => {
     );
     setFilteredVideoRequests(filtered);
   };
+  const requestColumns = [
+    {
+      title: "Video URL",
+      dataIndex: "demo_url",
+      key: "demo_url",
+      render: (text) => (
+        <a href={text} target="_blank" rel="noopener noreferrer">
+          {text}
+        </a>
+      ),
+    },
+    {
+      title: "Instagram ",
+      dataIndex: "instagram_User",
+      key: "instagram_User",
+      render: (text) => text.instagram_User || "Na",
+    },
+    {
+      title: "User",
+      dataIndex: ["userId", "displayName"],
+      key: "user",
+      render: (_, record) => record.userId?.displayName || "Unknown",
+    },
+    {
+      title: "Submission Date",
+      dataIndex: "created_at",
+      key: "created_at",
+      render: (date) => new Date(date).toLocaleDateString(),
+    },
+    {
+      title: "Status",
+      dataIndex: "is_approved",
+      key: "is_approved",
+      render: (status) => (
+        <Tag color={status ? "green" : "orange"}>
+          {status ? "Approved" : "Pending"}
+        </Tag>
+      ),
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (_, record) => (
+        <>
+          <Button type="link" onClick={() => handleView(record.demo_url)}>
+            View
+          </Button>
+          <Button
+            type="link"
+            onClick={() => handleApprove(record._id, true)}
+            disabled={record.is_approved}
+          >
+            Approve
+          </Button>
+        </>
+      ),
+    },
+  ];
 
   const approvedColumns = [
     {
