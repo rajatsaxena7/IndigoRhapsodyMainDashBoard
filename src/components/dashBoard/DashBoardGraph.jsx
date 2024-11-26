@@ -31,6 +31,8 @@ const DashBoardGraph = () => {
           return {
             ...entry,
             date: date.toISOString().split("T")[0],
+            totalOrders: parseInt(entry.totalOrders, 10),
+            totalRevenue: parseFloat(entry.totalRevenue),
           };
         });
 
@@ -77,7 +79,17 @@ const DashBoardGraph = () => {
                   });
             }}
           />
-          <YAxis />
+          <YAxis
+            tickFormatter={(value) => {
+              if (value >= 1000000) {
+                return `${(value / 1000000).toFixed(1)}M`; // Format large numbers as millions
+              } else if (value >= 1000) {
+                return `${(value / 1000).toFixed(1)}K`; // Format as thousands
+              } else {
+                return `${value.toFixed(2)}`; // Format revenue with 2 decimal places
+              }
+            }}
+          />
 
           <Tooltip
             formatter={(value, name) =>

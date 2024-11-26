@@ -5,6 +5,7 @@ import { getAllUsers } from "../../../service/userPageApi"; // Adjust the import
 
 function ManageUserTable() {
   const [users, setUsers] = useState([]);
+  const [originalUsers, setOriginalUsers] = useState([]); // Store the original users list
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
 
@@ -14,6 +15,7 @@ function ManageUserTable() {
         setLoading(true);
         const data = await getAllUsers();
         setUsers(data.users);
+        setOriginalUsers(data.users); // Store the original data as well
         setLoading(false);
       } catch (error) {
         message.error("Error fetching users");
@@ -75,10 +77,15 @@ function ManageUserTable() {
 
   const handleSearch = (value) => {
     setSearchText(value);
-    const filteredUsers = users.filter((user) =>
+    const filteredUsers = originalUsers.filter((user) =>
       user.displayName.toLowerCase().includes(value.toLowerCase())
     );
     setUsers(filteredUsers);
+  };
+
+  const handleReset = () => {
+    setSearchText("");
+    setUsers(originalUsers); // Reset users to the original list
   };
 
   return (
@@ -98,7 +105,7 @@ function ManageUserTable() {
             value={searchText}
             onChange={(e) => handleSearch(e.target.value)}
           />
-          <Button type="primary" onClick={() => setSearchText("")}>
+          <Button type="primary" onClick={handleReset}>
             Reset
           </Button>
         </Space>
