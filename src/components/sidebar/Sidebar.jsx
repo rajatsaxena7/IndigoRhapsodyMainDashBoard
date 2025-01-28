@@ -54,7 +54,6 @@ function Sidebar() {
                 <span className="menu-link-text">DashBoard</span>
               </NavLink>
             </li>
-
             <li className="menu-item">
               <NavLink
                 to="/designers"
@@ -126,6 +125,18 @@ function Sidebar() {
                 </span>
                 <span className="menu-link-text">Videos</span>
               </NavLink>
+            </li>{" "}
+            <li className="menu-item">
+              <NavLink
+                to="/designer-requests"
+                activeClassName="active"
+                className="menu-link"
+              >
+                <span className="menu-link-icon">
+                  <LiaVideoSolid style={{ color: "black" }} />
+                </span>
+                <span className="menu-link-text">Update Requests</span>
+              </NavLink>
             </li>
             <li className="menu-item">
               <NavLink
@@ -151,7 +162,6 @@ function Sidebar() {
                 <span className="menu-link-text">Notifications</span>
               </NavLink>
             </li>
-
             <li className="menu-item">
               <button onClick={handleSignOut} className="menu-link">
                 <span className="menu-link-icon">

@@ -22,6 +22,7 @@ import VideoContent from "./pages/videoContent/videoContent";
 import NotificationPage from "./pages/notifications/notificationPage";
 import ProtectedRoute from "../src/pages/loginScreen/protectedRoutes";
 import BannerPage from "./pages/content/bannerPage";
+import DesignerRequests from "./pages/designer-Requests/designerRequests";
 
 function App() {
   return (
@@ -53,6 +54,7 @@ function App() {
             <Route path="/video" element={<VideoContent />} />
             <Route path="/notification" element={<NotificationPage />} />
             <Route path="/banner" element={<BannerPage />} />
+            <Route path="/designer-requests" element={<DesignerRequests />} />
           </Route>
 
           {/* Fallback Route */}
