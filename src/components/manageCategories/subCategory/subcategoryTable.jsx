@@ -37,6 +37,9 @@ function SubCategoryTable() {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
 
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+  const [subCategoryToDelete, setSubCategoryToDelete] = useState(null);
+
   useEffect(() => {
     fetchSubCategories();
     fetchCategories();
@@ -74,10 +77,8 @@ function SubCategoryTable() {
         name: subcategory.name,
         categoryId: subcategory.categoryId?._id, // Use optional chaining
       });
-
     } else {
       form.resetFields();
-
     }
     setFile(null);
   };
@@ -86,19 +87,14 @@ function SubCategoryTable() {
     setIsModalVisible(false);
     form.resetFields();
     setFile(null);
- 
   };
 
   const handleFileChange = (info) => {
-
-
     const { fileList } = info;
 
     if (fileList.length === 0) {
       setFile(null);
-    
     } else {
-    
       // No action needed since file is set in beforeUpload
     }
   };
@@ -107,52 +103,36 @@ function SubCategoryTable() {
     try {
       const timestamp = Date.now();
       const fileRef = ref(storage, `subcategory/${timestamp}_${file.name}`);
-   
 
       // Upload the file
       const snapshot = await uploadBytes(fileRef, file);
-   
 
       // Get the download URL
       const url = await getDownloadURL(fileRef);
 
-
       return url;
     } catch (error) {
-    
       throw new Error(`Upload failed: ${error.message}`);
     }
   };
-
   const handleAddEdit = async (values) => {
     try {
-      setUploading(true); // Start uploading indicator
+      setUploading(true);
 
-      // Initialize image as existing image or empty string
       let image = currentSubCategory?.image || "";
 
-      // Only upload a new image if there's a new file selected
       if (file) {
-      
         image = await uploadImageToFirebase(file);
-      
       } else if (modalType === "add" && !image) {
-        // If adding a new subcategory, ensure there is an image
         throw new Error("Please upload an image.");
-      } else {
-     
       }
 
       const subcategoryData = {
         name: values.name,
-        image: image, // Use 'image' instead of 'imageUrl'
-        categoryId: values.categoryId, // Include the selected categoryId
+        image: image,
+        categoryId: values.categoryId,
       };
 
-      // Debugging: Log the subcategoryData
-     
-
-      // Validate subcategoryData before sending
       if (!subcategoryData.name || !subcategoryData.image) {
         throw new Error("Name and image are required");
       }
@@ -165,25 +145,41 @@ function SubCategoryTable() {
         message.success("Subcategory updated successfully");
       }
 
-      fetchSubCategories();
-      handleCancel();
+      // Refresh the page after successful add/edit
+      window.location.reload(); // Simplest way to refresh the page
+
+      // OR, if you want a less disruptive refresh (recommended):
+      // fetchSubCategories(); // Call your existing fetch function
+      // handleCancel();       // Close the modal after the refresh
     } catch (error) {
-     
       message.error(error.message || "Error saving subcategory");
     } finally {
-      setUploading(false); // End uploading indicator
+      setUploading(false);
     }
   };
 
   const handleDelete = async (id) => {
+    setSubCategoryToDelete(id);
+    setDeleteConfirmVisible(true);
+  };
+
+  const confirmDelete = async () => {
     try {
-      await DeleteSubCategory(id);
+      await DeleteSubCategory(subCategoryToDelete);
       message.success("Subcategory deleted successfully");
       fetchSubCategories();
     } catch (error) {
       console.error("Error deleting subcategory:", error);
       message.error("Error deleting subcategory");
+    } finally {
+      setDeleteConfirmVisible(false);
+      setSubCategoryToDelete(null);
     }
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirmVisible(false);
+    setSubCategoryToDelete(null);
   };
 
   const handleApproveToggle = async (id, isApproved) => {
@@ -194,7 +190,6 @@ function SubCategoryTable() {
       );
       fetchSubCategories();
     } catch (error) {
-     
       message.error("Error updating approval status");
     }
   };
@@ -328,7 +323,7 @@ function SubCategoryTable() {
             <Upload
               beforeUpload={(file) => {
                 setFile(file);
-              
+
                 return false; // Prevent automatic upload
               }}
               onChange={handleFileChange}
@@ -350,6 +345,14 @@ function SubCategoryTable() {
             )}
           </Form.Item>
         </Form>
+      </Modal>
+      <Modal
+        title="Confirm Delete"
+        visible={deleteConfirmVisible}
+        onOk={confirmDelete}
+        onCancel={cancelDelete}
+      >
+        Are you sure you want to delete this subcategory?
       </Modal>
     </div>
   );

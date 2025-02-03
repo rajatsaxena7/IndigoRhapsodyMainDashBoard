@@ -114,72 +114,74 @@ const RequestTable = () => {
         pagination={{ pageSize: 5 }}
       />
       {/* Modal for approving/rejecting requests */}
-      <Modal
-        title="Review Update Request"
-        visible={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        footer={[
-          <Button
-            key="reject"
-            type="danger"
-            onClick={() => reviewRequest(selectedRequest._id, "Rejected")}
-          >
-            Reject
-          </Button>,
-          <Button
-            key="approve"
-            type="primary"
-            onClick={() => reviewRequest(selectedRequest._id, "Approved")}
-          >
-            Approve
-          </Button>,
-        ]}
-      >
-        <h3>
-          Designer Name: {selectedRequest?.designerId?.userId?.displayName}
-        </h3>
-        <h4>Email: {selectedRequest?.designerId?.userId?.email}</h4>
-        <h4>Phone: {selectedRequest?.designerId?.userId?.phoneNumber}</h4>
+      {selectedRequest && (
+        <Modal
+          title="Review Update Request"
+          visible={isModalVisible}
+          onCancel={() => setIsModalVisible(false)}
+          footer={[
+            <Button
+              key="reject"
+              type="danger"
+              onClick={() => reviewRequest(selectedRequest._id, "Rejected")}
+            >
+              Reject
+            </Button>,
+            <Button
+              key="approve"
+              type="primary"
+              onClick={() => reviewRequest(selectedRequest._id, "Approved")}
+            >
+              Approve
+            </Button>,
+          ]}
+        >
+          <h3>
+            Designer Name: {selectedRequest?.designerId?.userId?.displayName}
+          </h3>
+          <h4>Email: {selectedRequest?.designerId?.userId?.email}</h4>
+          <h4>Phone: {selectedRequest?.designerId?.userId?.phoneNumber}</h4>
 
-        <h4>Requested Updates:</h4>
-        <div>
-          {selectedRequest?.requestedUpdates ? (
-            Object.entries(selectedRequest.requestedUpdates).map(
-              ([key, value]) => (
-                <div key={key} style={{ marginBottom: "10px" }}>
-                  <strong>{key}:</strong>{" "}
-                  {key === "logoUrl" || key === "backGroundImage" ? (
-                    <div>
-                      <img
-                        src={value}
-                        alt={key}
-                        style={{
-                          width: "100px",
-                          height: "100px",
-                          objectFit: "cover",
-                          marginTop: "5px",
-                          borderRadius: "5px",
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <span>{value}</span>
-                  )}
-                </div>
+          <h4>Requested Updates:</h4>
+          <div>
+            {selectedRequest?.requestedUpdates ? (
+              Object.entries(selectedRequest.requestedUpdates).map(
+                ([key, value]) => (
+                  <div key={key} style={{ marginBottom: "10px" }}>
+                    <strong>{key}:</strong>{" "}
+                    {key === "logoUrl" || key === "backGroundImage" ? (
+                      <div>
+                        <img
+                          src={value}
+                          alt={key}
+                          style={{
+                            width: "100px",
+                            height: "100px",
+                            objectFit: "cover",
+                            marginTop: "5px",
+                            borderRadius: "5px",
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <span>{value}</span>
+                    )}
+                  </div>
+                )
               )
-            )
-          ) : (
-            <p>No updates available</p>
-          )}
-        </div>
+            ) : (
+              <p>No updates available</p>
+            )}
+          </div>
 
-        <Input.TextArea
-          rows={3}
-          placeholder="Add admin comments (optional)"
-          value={adminComments}
-          onChange={(e) => setAdminComments(e.target.value)}
-        />
-      </Modal>
+          <Input.TextArea
+            rows={3}
+            placeholder="Add admin comments (optional)"
+            value={adminComments}
+            onChange={(e) => setAdminComments(e.target.value)}
+          />
+        </Modal>
+      )}
     </div>
   );
 };

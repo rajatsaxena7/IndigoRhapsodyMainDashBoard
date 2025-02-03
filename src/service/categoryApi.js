@@ -118,11 +118,14 @@ export const ApproveSubCategory = async (subCategoryId, isApproved) => {
 
 export const UpdateSubCategory = async (subCategoryId, subCategoryData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/subcategory/update`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(subCategoryData),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/subcategory/${subCategoryId}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(subCategoryData),
+      }
+    );
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message);

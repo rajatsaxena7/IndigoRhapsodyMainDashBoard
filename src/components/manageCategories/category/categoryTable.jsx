@@ -85,6 +85,7 @@ function CategoryTable() {
 
       await AddCategory(categoryData);
       message.success("Category added successfully");
+      window.location.reload(); // Simplest way to refresh the page
       fetchCategories();
       handleCancel();
     } catch (error) {
@@ -124,8 +125,8 @@ function CategoryTable() {
     },
     {
       title: "Image",
-      dataIndex: "imageUrl",
-      key: "imageUrl",
+      dataIndex: "image",
+      key: "image",
       render: (imageUrl) =>
         imageUrl ? <Image width={50} src={imageUrl} alt="Category" /> : "N/A",
     },

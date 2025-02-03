@@ -76,28 +76,34 @@ const BannerTable = () => {
       setLoading(false);
     }
   };
+  const handleDeleteBanner = async (bannerId) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/banner/${bannerId}`, {
+        method: "DELETE",
+      });
 
-  const handleDeleteBanner = (bannerId) => {
-    Modal.confirm({
-      title: "Are you sure you want to delete this banner?",
-      okText: "Yes",
-      okType: "danger",
-      cancelText: "No",
-      onOk: async () => {
-        try {
-          setLoading(true);
-          const response = await DeleteBanner(bannerId);
-          message.success(response.message);
-          fetchBanners(); // Refresh the banner list
-        } catch (error) {
-          message.error(`Error: ${error.message}`);
-        } finally {
-          setLoading(false);
-        }
-      },
-    });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error ${response.status}: ${errorText}`);
+      }
+
+      if (response.status !== 204) {
+        // Or 200, if your server sends JSON
+        const data = await response.json();
+        message.success("Banner deleted successfully"); // Show success message
+        fetchBanners(); // Refresh the banner list (recommended over full reload)
+        return data;
+      } else {
+        message.success("Banner deleted successfully"); // Show success message for 204
+        fetchBanners(); // Refresh the banner list
+        return;
+      }
+    } catch (error) {
+      console.error("DeleteBanner error:", error);
+      message.error(`Error deleting banner: ${error.message}`); // Show error message to user
+      throw error;
+    }
   };
-
   const handleAddBanner = async (values) => {
     try {
       setUploading(true);
