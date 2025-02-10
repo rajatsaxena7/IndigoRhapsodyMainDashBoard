@@ -40,7 +40,7 @@ const RequestTable = () => {
       });
       message.success(`Request ${status.toLowerCase()} successfully!`);
       fetchRequests(); // Refresh the table after action
-      setIsModalVisible(false);
+      setIsModalVisible(false); // Close the modal after action
     } catch (error) {
       console.error("Error reviewing request:", error);
       message.error("Failed to review request");
@@ -54,17 +54,17 @@ const RequestTable = () => {
   const columns = [
     {
       title: "Designer Name",
-      dataIndex: "displayName", // Use populated data
+      dataIndex: "displayName",
       key: "displayName",
     },
     {
       title: "Email",
-      dataIndex: "email", // Use populated data
+      dataIndex: "email",
       key: "email",
     },
     {
       title: "Phone",
-      dataIndex: "phoneNumber", // Use populated data
+      dataIndex: "phoneNumber",
       key: "phoneNumber",
     },
     {
@@ -94,7 +94,8 @@ const RequestTable = () => {
             type="primary"
             onClick={() => {
               setSelectedRequest(record);
-              setIsModalVisible(true);
+              console.log("Selected Request:", record); // Log the selected request
+              setIsModalVisible(true); // Open the modal
             }}
           >
             Review
@@ -102,6 +103,11 @@ const RequestTable = () => {
         ),
     },
   ];
+
+  const handleModalClose = () => {
+    setIsModalVisible(false);
+    setSelectedRequest(null); // Reset the selected request when closing the modal
+  };
 
   return (
     <div>
@@ -117,8 +123,8 @@ const RequestTable = () => {
       {selectedRequest && (
         <Modal
           title="Review Update Request"
-          visible={isModalVisible}
-          onCancel={() => setIsModalVisible(false)}
+          visible={isModalVisible} // Ensure modal visibility is controlled by state
+          onCancel={handleModalClose} // Close modal and reset selectedRequest
           footer={[
             <Button
               key="reject"
