@@ -163,6 +163,30 @@ function Sidebar() {
               </NavLink>
             </li>
             <li className="menu-item">
+              <NavLink
+                to="/blogs"
+                activeClassName="active"
+                className="menu-link"
+              >
+                <span className="menu-link-icon">
+                  <LiaVideoSolid style={{ color: "black" }} />
+                </span>
+                <span className="menu-link-text">Blogs</span>
+              </NavLink>
+            </li>
+            <li className="menu-item">
+              <NavLink
+                to="/manage-queries"
+                activeClassName="active"
+                className="menu-link"
+              >
+                <span className="menu-link-icon">
+                  <LiaVideoSolid style={{ color: "black" }} />
+                </span>
+                <span className="menu-link-text">Queries</span>
+              </NavLink>
+            </li>
+            <li className="menu-item">
               <button onClick={handleSignOut} className="menu-link">
                 <span className="menu-link-icon">
                   <PiSignOutLight style={{ color: "black" }} />

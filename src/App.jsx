@@ -23,6 +23,8 @@ import NotificationPage from "./pages/notifications/notificationPage";
 import ProtectedRoute from "../src/pages/loginScreen/protectedRoutes";
 import BannerPage from "./pages/content/bannerPage";
 import DesignerRequests from "./pages/designer-Requests/designerRequests";
+import BlogsPage from "./pages/blogs/blogsPage";
+import ManageQueries from "./pages/manageQueries/manageQueries";
 
 function App() {
   return (
@@ -53,7 +55,9 @@ function App() {
             <Route path="/category" element={<ManageCategories />} />
             <Route path="/video" element={<VideoContent />} />
             <Route path="/notification" element={<NotificationPage />} />
+            <Route path="/manage-queries" element={<ManageQueries />} />
             <Route path="/banner" element={<BannerPage />} />
+            <Route path="/blogs" element={<BlogsPage />} />
             <Route path="/designer-requests" element={<DesignerRequests />} />
           </Route>
 
