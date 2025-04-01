@@ -112,6 +112,60 @@ const VideoContent = () => {
     }
   };
 
+  // Unified toggle handler in your component
+  const handleToggleApproval = async (
+    videoId,
+    currentStatus,
+    isApprovedVideo = false
+  ) => {
+    try {
+      const newStatus = !currentStatus;
+
+      // Call the API
+      await ApproveVideoContent(videoId, newStatus);
+
+      // Update state based on whether it's an approved video or pending request
+      if (isApprovedVideo) {
+        setApprovedVideos((prev) =>
+          prev.map((video) =>
+            video._id === videoId ? { ...video, is_approved: newStatus } : video
+          )
+        );
+      } else {
+        setVideoRequests((prev) =>
+          prev.map((video) =>
+            video._id === videoId ? { ...video, is_approved: newStatus } : video
+          )
+        );
+        setFilteredVideoRequests((prev) =>
+          prev.map((video) =>
+            video._id === videoId ? { ...video, is_approved: newStatus } : video
+          )
+        );
+
+        // Optional: Move between lists if needed
+        if (newStatus) {
+          const videoToPromote = videoRequests.find((v) => v._id === videoId);
+          if (videoToPromote) {
+            setApprovedVideos((prev) => [
+              ...prev,
+              { ...videoToPromote, is_approved: true },
+            ]);
+            setVideoRequests((prev) => prev.filter((v) => v._id !== videoId));
+            setFilteredVideoRequests((prev) =>
+              prev.filter((v) => v._id !== videoId)
+            );
+          }
+        }
+      }
+
+      message.success(
+        `Video ${newStatus ? "approved" : "unapproved"} successfully`
+      );
+    } catch (error) {
+      message.error(`Failed to toggle approval: ${error.message}`);
+    }
+  };
   const requestColumns = [
     {
       title: "Video URL",
@@ -159,12 +213,13 @@ const VideoContent = () => {
           <Button type="link" onClick={() => handleView(record.demo_url)}>
             View
           </Button>
+
           <Button
             type="link"
-            onClick={() => handleApprove(record._id, true)}
-            disabled={record.is_approved}
+            onClick={() => handleToggleApproval(record._id, record.is_approved)}
+            danger={record.is_approved}
           >
-            Approve
+            {record.is_approved ? "Unapprove" : "Approve"}
           </Button>
         </>
       ),
@@ -209,10 +264,12 @@ const VideoContent = () => {
           </Button>
           <Button
             type="link"
-            onClick={() => handleApproveContent(record._id)}
-            disabled={record.is_approved}
+            onClick={() =>
+              handleToggleApproval(record._id, record.is_approved, true)
+            }
+            danger={record.is_approved}
           >
-            Approve
+            {record.is_approved ? "Unapprove" : "Re-approve"}
           </Button>
         </>
       ),

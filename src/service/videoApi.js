@@ -52,13 +52,14 @@ export const ApproveVideo = async (videoId, is_approved) => {
   }
 };
 
-export const ApproveVideoContent = async (videoId) => {
+export const ApproveVideoContent = async (videoId, isApproved) => {
   try {
     const response = await fetch(
       `${API_BASE_URL}/content-video/videos/${videoId}/approve`,
       {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_approved: isApproved }),
       }
     );
     if (!response.ok) {
