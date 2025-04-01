@@ -15,6 +15,7 @@ import {
   allDesigners,
   GetDetailForDesigner,
   updateDesignerApprovalStatus,
+  disableDesigner,
 } from "../../../service/designerApi";
 import * as XLSX from "xlsx";
 
@@ -110,6 +111,23 @@ const ManageDesignerTable = () => {
     setSelectedDesigner(null);
   };
 
+  const handleToggleApproval = async (designerId) => {
+    try {
+      setLoading(true);
+      await disableDesigner(designerId);
+      message.success("Designer status updated successfully");
+
+      // Refresh the designer list
+      const data = await allDesigners();
+      setDesigners(data.designers);
+      setFilteredDesigners(data.designers);
+    } catch (error) {
+      message.error(`Failed to update designer status: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleApprovalAction = async (designerId, isApproved) => {
     try {
       setLoading(true);
@@ -180,10 +198,12 @@ const ManageDesignerTable = () => {
           </Button>
           <Button
             type="link"
-            onClick={() => showModal(record._id, true)}
-            disabled={record.is_approved}
+            onClick={() =>
+              handleToggleApproval(record._id, !record.is_approved)
+            }
+            style={{ color: record.is_approved ? "#ff4d4f" : "#52c41a" }}
           >
-            Take Action
+            {record.is_approved ? "Disable" : "Enable"}
           </Button>
         </Space>
       ),
