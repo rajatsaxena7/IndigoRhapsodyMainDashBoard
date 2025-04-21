@@ -1,20 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { Table, Input, Button, Space, Modal, Form } from "antd";
+import { Table, Input, Button, Space, Modal, Form, message } from "antd";
 import {
   SearchOutlined,
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
+import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
+
 import {
   getBlogs,
   createBlog,
   updateBlog,
   deleteBlog,
-} from "../../service/blogsService"; // Adjust the import path as necessary
+} from "../../service/blogsService"; // Adjust this path
 
 const { Column } = Table;
-const { TextArea } = Input;
 
 const BlogsPage = () => {
   const [blogs, setBlogs] = useState([]);
@@ -22,6 +24,7 @@ const BlogsPage = () => {
   const [editingBlog, setEditingBlog] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [form] = Form.useForm();
+  const [quillContent, setQuillContent] = useState("");
 
   useEffect(() => {
     fetchBlogs();
@@ -32,7 +35,8 @@ const BlogsPage = () => {
       const blogs = await getBlogs();
       setBlogs(blogs);
     } catch (error) {
-      console.error("Failed to fetch blogs:", error.message);
+      message.error("Failed to fetch blogs");
+      console.error(error);
     }
   };
 
@@ -46,7 +50,8 @@ const BlogsPage = () => {
 
   const showModal = (blog = null) => {
     setEditingBlog(blog);
-    form.setFieldsValue(blog || { title: "", description: "", image: "" });
+    form.setFieldsValue(blog || { title: "", image: "" });
+    setQuillContent(blog?.description || "");
     setIsModalVisible(true);
   };
 
@@ -54,28 +59,45 @@ const BlogsPage = () => {
     setIsModalVisible(false);
     setEditingBlog(null);
     form.resetFields();
+    setQuillContent("");
   };
 
   const handleSubmit = async (values) => {
+    if (!quillContent) {
+      message.error("Description is required");
+      return;
+    }
+
     try {
+      const payload = {
+        ...values,
+        description: quillContent,
+      };
+
       if (editingBlog) {
-        await updateBlog(editingBlog._id, values);
+        await updateBlog(editingBlog._id, payload);
+        message.success("Blog updated successfully");
       } else {
-        await createBlog(values);
+        await createBlog(payload);
+        message.success("Blog created successfully");
       }
+
       fetchBlogs();
       handleCancel();
     } catch (error) {
       console.error("Failed to save blog:", error.message);
+      message.error("Error saving blog");
     }
   };
 
   const handleDelete = async (id) => {
     try {
       await deleteBlog(id);
+      message.success("Blog deleted successfully");
       fetchBlogs();
     } catch (error) {
       console.error("Failed to delete blog:", error.message);
+      message.error("Error deleting blog");
     }
   };
 
@@ -99,7 +121,6 @@ const BlogsPage = () => {
 
       <Table dataSource={filteredBlogs} rowKey="_id">
         <Column title="Title" dataIndex="title" key="title" />
-        <Column title="Description" dataIndex="description" key="description" />
         <Column
           title="Image"
           dataIndex="image"
@@ -108,7 +129,7 @@ const BlogsPage = () => {
             <img
               src={image}
               alt="Blog"
-              style={{ width: 100, height: "auto" }}
+              style={{ width: 100, height: "auto", objectFit: "cover" }}
             />
           )}
         />
@@ -139,9 +160,10 @@ const BlogsPage = () => {
 
       <Modal
         title={editingBlog ? "Edit Blog" : "Add Blog"}
-        visible={isModalVisible}
+        open={isModalVisible}
         onCancel={handleCancel}
         footer={null}
+        width={800}
       >
         <Form form={form} onFinish={handleSubmit} layout="vertical">
           <Form.Item
@@ -151,15 +173,21 @@ const BlogsPage = () => {
           >
             <Input placeholder="Enter title" />
           </Form.Item>
+
           <Form.Item
-            name="description"
             label="Description"
-            rules={[
-              { required: true, message: "Please enter the description" },
-            ]}
+            required
+            validateStatus={!quillContent ? "error" : ""}
+            help={!quillContent ? "Please enter the description" : ""}
           >
-            <TextArea rows={4} placeholder="Enter description" />
+            <ReactQuill
+              theme="snow"
+              value={quillContent}
+              onChange={setQuillContent}
+              style={{ height: "200px", marginBottom: "40px" }}
+            />
           </Form.Item>
+
           <Form.Item
             name="image"
             label="Image URL"
@@ -167,6 +195,7 @@ const BlogsPage = () => {
           >
             <Input placeholder="Enter image URL" />
           </Form.Item>
+
           <Form.Item>
             <Button type="primary" htmlType="submit">
               {editingBlog ? "Update" : "Create"}
