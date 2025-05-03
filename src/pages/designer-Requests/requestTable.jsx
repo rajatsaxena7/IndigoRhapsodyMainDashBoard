@@ -11,27 +11,47 @@ const RequestTable = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [adminComments, setAdminComments] = useState("");
 
-  // Fetch update requests
+  /* ------------------------------------------------------------------ *
+   * Helpers                                                             *
+   * ------------------------------------------------------------------ */
+
+  /** Turn one raw update‑request into the flattened row the table needs */
+  const normaliseRow = (req) => {
+    const designer = req.designerId; // might be null
+    const user = designer?.userId;
+    const fallback = req.requestedUpdates; // always present
+
+    return {
+      ...req,
+      displayName: user?.displayName ?? fallback?.displayName ?? "Unknown",
+      email: user?.email ?? fallback?.email ?? "N/A",
+      phoneNumber: user?.phoneNumber ?? fallback?.phoneNumber ?? "N/A",
+    };
+  };
+
+  /* ------------------------------------------------------------------ *
+   * API calls                                                           *
+   * ------------------------------------------------------------------ */
+
   const fetchRequests = async () => {
+    setLoading(true);
     try {
-      const response = await axios.get(
+      const { data } = await axios.get(
         `${BASE_URL}/designer/update-requests/latest`
       );
-      const updateRequests = response.data.updateRequests.map((request) => ({
-        ...request,
-        displayName: request.designerId.userId.displayName,
-        email: request.designerId.userId.email,
-        phoneNumber: request.designerId.userId.phoneNumber,
-      }));
-      setData(updateRequests);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching requests:", error);
+
+      // Array safety
+      const raw = Array.isArray(data.updateRequests) ? data.updateRequests : [];
+
+      setData(raw.map(normaliseRow));
+    } catch (err) {
+      console.error("Error fetching requests:", err);
       message.error("Failed to fetch requests");
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Approve or reject a request
   const reviewRequest = async (requestId, status) => {
     try {
       await axios.put(`${BASE_URL}/designer/review/${requestId}`, {
@@ -39,34 +59,32 @@ const RequestTable = () => {
         adminComments,
       });
       message.success(`Request ${status.toLowerCase()} successfully!`);
-      fetchRequests(); // Refresh the table after action
-      setIsModalVisible(false); // Close the modal after action
-    } catch (error) {
-      console.error("Error reviewing request:", error);
+      fetchRequests(); // refresh list
+      setIsModalVisible(false);
+      setAdminComments("");
+      setSelectedRequest(null);
+    } catch (err) {
+      console.error("Error reviewing request:", err);
       message.error("Failed to review request");
     }
   };
+
+  /* ------------------------------------------------------------------ *
+   * Lifecycle                                                           *
+   * ------------------------------------------------------------------ */
 
   useEffect(() => {
     fetchRequests();
   }, []);
 
+  /* ------------------------------------------------------------------ *
+   * Table definition                                                    *
+   * ------------------------------------------------------------------ */
+
   const columns = [
-    {
-      title: "Designer Name",
-      dataIndex: "displayName",
-      key: "displayName",
-    },
-    {
-      title: "Email",
-      dataIndex: "email",
-      key: "email",
-    },
-    {
-      title: "Phone",
-      dataIndex: "phoneNumber",
-      key: "phoneNumber",
-    },
+    { title: "Designer Name", dataIndex: "displayName", key: "displayName" },
+    { title: "Email", dataIndex: "email", key: "email" },
+    { title: "Phone", dataIndex: "phoneNumber", key: "phoneNumber" },
     {
       title: "Status",
       dataIndex: "status",
@@ -94,8 +112,7 @@ const RequestTable = () => {
             type="primary"
             onClick={() => {
               setSelectedRequest(record);
-              console.log("Selected Request:", record); // Log the selected request
-              setIsModalVisible(true); // Open the modal
+              setIsModalVisible(true);
             }}
           >
             Review
@@ -104,31 +121,36 @@ const RequestTable = () => {
     },
   ];
 
-  const handleModalClose = () => {
-    setIsModalVisible(false);
-    setSelectedRequest(null); // Reset the selected request when closing the modal
-  };
+  /* ------------------------------------------------------------------ *
+   * Render                                                              *
+   * ------------------------------------------------------------------ */
 
   return (
     <div>
       <h1>Update Requests</h1>
+
       <Table
         dataSource={data}
         columns={columns}
         loading={loading}
         rowKey="_id"
-        pagination={{ pageSize: 5 }}
+        pagination={{ pageSize: 8 }}
       />
-      {/* Modal for approving/rejecting requests */}
+
+      {/* ---------- Review Modal ---------- */}
       {selectedRequest && (
         <Modal
+          open={isModalVisible} // 'open' is the canonical prop in AntD v5+
+          onCancel={() => {
+            setIsModalVisible(false);
+            setSelectedRequest(null);
+            setAdminComments("");
+          }}
           title="Review Update Request"
-          visible={isModalVisible} // Ensure modal visibility is controlled by state
-          onCancel={handleModalClose} // Close modal and reset selectedRequest
           footer={[
             <Button
               key="reject"
-              type="danger"
+              danger
               onClick={() => reviewRequest(selectedRequest._id, "Rejected")}
             >
               Reject
@@ -143,41 +165,56 @@ const RequestTable = () => {
           ]}
         >
           <h3>
-            Designer Name: {selectedRequest?.designerId?.userId?.displayName}
+            Designer&nbsp;Name:&nbsp;
+            {selectedRequest.designerId
+              ? selectedRequest.designerId.userId.displayName
+              : selectedRequest.requestedUpdates.displayName}
           </h3>
-          <h4>Email: {selectedRequest?.designerId?.userId?.email}</h4>
-          <h4>Phone: {selectedRequest?.designerId?.userId?.phoneNumber}</h4>
 
-          <h4>Requested Updates:</h4>
-          <div>
-            {selectedRequest?.requestedUpdates ? (
-              Object.entries(selectedRequest.requestedUpdates).map(
-                ([key, value]) => (
-                  <div key={key} style={{ marginBottom: "10px" }}>
-                    <strong>{key}:</strong>{" "}
-                    {key === "logoUrl" || key === "backGroundImage" ? (
-                      <div>
+          <h4>
+            Email:&nbsp;
+            {selectedRequest.designerId
+              ? selectedRequest.designerId.userId.email
+              : selectedRequest.requestedUpdates.email}
+          </h4>
+
+          <h4>
+            Phone:&nbsp;
+            {selectedRequest.designerId
+              ? selectedRequest.designerId.userId.phoneNumber
+              : selectedRequest.requestedUpdates.phoneNumber}
+          </h4>
+
+          <h4 style={{ marginTop: 16 }}>Requested Updates:</h4>
+          <div style={{ maxHeight: 250, overflowY: "auto" }}>
+            {selectedRequest.requestedUpdates
+              ? Object.entries(selectedRequest.requestedUpdates).map(
+                  ([key, value]) => (
+                    <div key={key} style={{ marginBottom: 12 }}>
+                      <strong>{key}:</strong>{" "}
+                      {key === "logoUrl" || key === "backGroundImage" ? (
                         <img
                           src={value}
                           alt={key}
                           style={{
-                            width: "100px",
-                            height: "100px",
+                            width: 120,
+                            height: 120,
                             objectFit: "cover",
-                            marginTop: "5px",
-                            borderRadius: "5px",
+                            borderRadius: 6,
+                            marginTop: 4,
                           }}
                         />
-                      </div>
-                    ) : (
-                      <span>{value}</span>
-                    )}
-                  </div>
+                      ) : Array.isArray(value) ? (
+                        <pre style={{ whiteSpace: "pre-wrap" }}>
+                          {JSON.stringify(value, null, 2)}
+                        </pre>
+                      ) : (
+                        <span>{String(value)}</span>
+                      )}
+                    </div>
+                  )
                 )
-              )
-            ) : (
-              <p>No updates available</p>
-            )}
+              : "No updates available"}
           </div>
 
           <Input.TextArea
@@ -185,6 +222,7 @@ const RequestTable = () => {
             placeholder="Add admin comments (optional)"
             value={adminComments}
             onChange={(e) => setAdminComments(e.target.value)}
+            style={{ marginTop: 16 }}
           />
         </Modal>
       )}
