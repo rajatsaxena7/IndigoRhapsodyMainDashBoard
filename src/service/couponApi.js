@@ -24,6 +24,18 @@ export const GetCoupons = async () => {
   );
 };
 
+export const SearchUsers = async (searchTerm) => {
+  return await apiRequest(
+    `https://indigo-rhapsody-backend-ten.vercel.app/coupon/searchUser?q=${searchTerm}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
+};
+
 export const DeleteCoupon = async (couponId) => {
   return await apiRequest(
     `https://indigo-rhapsody-backend-ten.vercel.app/coupon/${couponId}`,

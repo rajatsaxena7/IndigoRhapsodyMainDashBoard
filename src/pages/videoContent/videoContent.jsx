@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Modal, message, Tag, Input } from "antd";
+import { Table, Button, Modal, message, Tag, Input, Upload } from "antd";
 import {
   GetVideoRequests,
   ApproveVideo,
@@ -7,8 +7,18 @@ import {
   ApproveVideoContent,
 } from "../../service/videoApi";
 import { VideoContentWrap } from "./videoContent.Styles";
+import { Form } from "antd";
+import { uploadImageToFirebase } from "../../service/FirebaseService";
+import { InboxOutlined } from "@ant-design/icons";
+import {
+  getStorage,
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+} from "firebase/storage";
 
 const { Search } = Input;
+const storage = getStorage(); // Make sure Firebase is initialized somewhere
 
 const VideoContent = () => {
   const [videoRequests, setVideoRequests] = useState([]);
@@ -24,6 +34,7 @@ const VideoContent = () => {
   const [currentVideoUrl, setCurrentVideoUrl] = useState(null);
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState(null);
+  const [addModalVisible, setAddModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -51,7 +62,6 @@ const VideoContent = () => {
     fetchVideos();
   }, []);
 
-  // Filter videos based on the search query
   const handleSearch = (value) => {
     setSearchValue(value);
     const lowerCaseValue = value.toLowerCase();
@@ -278,6 +288,105 @@ const VideoContent = () => {
 
   return (
     <VideoContentWrap>
+      <div style={{ display: "flex", gap: 12 }}>
+        <Search
+          placeholder="Search by user name"
+          value={searchValue}
+          onChange={(e) => handleSearch(e.target.value)}
+          onSearch={handleSearch}
+          enterButton
+          style={{ width: 300 }}
+        />
+
+        <Button type="primary" onClick={() => setAddModalVisible(true)}>
+          Add Video
+        </Button>
+      </div>
+      <Modal
+        title="Create / Upload Video"
+        open={addModalVisible}
+        onCancel={() => setAddModalVisible(false)}
+        footer={null}
+        destroyOnClose
+      >
+        <Form
+          layout="vertical"
+          onFinish={async (values) => {
+            try {
+              // Here's the fix - get the file from the first item in the fileList array
+              const file = values.videoFile?.[0]?.originFileObj;
+
+              if (!file) {
+                return message.error("Please select a video file.");
+              }
+
+              const fileRef = ref(storage, `videos/${Date.now()}_${file.name}`);
+              const task = uploadBytesResumable(fileRef, file);
+
+              await new Promise((resolve, reject) => {
+                task.on("state_changed", null, reject, () => resolve());
+              });
+
+              const videoUrl = await getDownloadURL(fileRef);
+
+              const userId = localStorage.getItem("userId");
+
+              const res = await fetch(
+                "https://indigo-rhapsody-backend-ten.vercel.app/video/videos/admin",
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    userId,
+                    videoUrl,
+                  }), 
+                }
+              );
+              if (!res.ok) throw new Error(`Server responded ${res.status}`);
+
+              message.success("Video uploaded & approved!");
+              setAddModalVisible(false);
+
+              window.location.reload();
+            } catch (err) {
+              console.error(err);
+              message.error(`Upload failed: ${err.message}`);
+            }
+          }}
+        >
+          <Form.Item
+            label="Video File"
+            name="videoFile"
+            valuePropName="fileList"
+            getValueFromEvent={(e) => {
+              if (Array.isArray(e)) {
+                return e;
+              }
+              return e?.fileList;
+            }}
+            rules={[{ required: true, message: "Please upload a video file" }]}
+          >
+            <Upload.Dragger
+              accept="video/*"
+              beforeUpload={() => false} // prevent auto-upload
+              maxCount={1}
+            >
+              <p className="ant-upload-drag-icon">
+                <InboxOutlined />
+              </p>
+              <p className="ant-upload-text">
+                Click or drag video file to this area
+              </p>
+            </Upload.Dragger>
+          </Form.Item>
+
+          <Form.Item>
+            <Button type="primary" htmlType="submit" block>
+              Submit
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
       <div
         style={{
           display: "flex",
@@ -286,10 +395,11 @@ const VideoContent = () => {
         }}
       >
         <h3>Video Applications</h3>
+
         <Search
           placeholder="Search by user name"
           value={searchValue}
-          onChange={(e) => handleSearch(e.target.value)} // Filter dynamically as user types
+          onChange={(e) => handleSearch(e.target.value)}
           onSearch={handleSearch}
           enterButton
           style={{ width: 300 }}
@@ -352,7 +462,6 @@ const VideoContent = () => {
         )}
       </Modal>
 
-      {/* Video Details Modal */}
       <Modal
         title="Video Details"
         visible={viewModalVisible}
