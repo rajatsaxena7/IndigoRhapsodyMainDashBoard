@@ -332,14 +332,14 @@ const VideoContent = () => {
               const userId = localStorage.getItem("userId");
 
               const res = await fetch(
-                "https://indigo-rhapsody-backend-ten.vercel.app/video/videos/admin",
+                "https://indigo-rhapsody-backend-ten.vercel.app/content-video/createAdminVideo",
                 {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
                     userId,
                     videoUrl,
-                  }), 
+                  }),
                 }
               );
               if (!res.ok) throw new Error(`Server responded ${res.status}`);
