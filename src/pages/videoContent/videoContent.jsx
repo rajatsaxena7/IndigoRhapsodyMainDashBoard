@@ -18,7 +18,7 @@ import {
 } from "firebase/storage";
 
 const { Search } = Input;
-const storage = getStorage(); // Make sure Firebase is initialized somewhere
+const storage = getStorage();
 
 const VideoContent = () => {
   const [videoRequests, setVideoRequests] = useState([]);
@@ -29,12 +29,13 @@ const VideoContent = () => {
   const [loadingApproved, setLoadingApproved] = useState(true);
   const [errorRequests, setErrorRequests] = useState(null);
   const [errorApproved, setErrorApproved] = useState(null);
-  const [searchValue, setSearchValue] = useState(""); // New search value state
+  const [searchValue, setSearchValue] = useState("");
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [currentVideoUrl, setCurrentVideoUrl] = useState(null);
   const [viewModalVisible, setViewModalVisible] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [addModalVisible, setAddModalVisible] = useState(false);
+  const [form] = Form.useForm();
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -66,13 +67,11 @@ const VideoContent = () => {
     setSearchValue(value);
     const lowerCaseValue = value.toLowerCase();
 
-    // Filter video requests
     const filteredRequests = videoRequests.filter((video) =>
       video.userId?.displayName?.toLowerCase().includes(lowerCaseValue)
     );
     setFilteredVideoRequests(filteredRequests);
 
-    // Filter approved videos
     const filteredApproved = approvedVideos.filter((video) =>
       video.userId?.displayName?.toLowerCase().includes(lowerCaseValue)
     );
@@ -122,7 +121,6 @@ const VideoContent = () => {
     }
   };
 
-  // Unified toggle handler in your component
   const handleToggleApproval = async (
     videoId,
     currentStatus,
@@ -130,11 +128,8 @@ const VideoContent = () => {
   ) => {
     try {
       const newStatus = !currentStatus;
-
-      // Call the API
       await ApproveVideoContent(videoId, newStatus);
 
-      // Update state based on whether it's an approved video or pending request
       if (isApprovedVideo) {
         setApprovedVideos((prev) =>
           prev.map((video) =>
@@ -153,7 +148,6 @@ const VideoContent = () => {
           )
         );
 
-        // Optional: Move between lists if needed
         if (newStatus) {
           const videoToPromote = videoRequests.find((v) => v._id === videoId);
           if (videoToPromote) {
@@ -176,6 +170,62 @@ const VideoContent = () => {
       message.error(`Failed to toggle approval: ${error.message}`);
     }
   };
+
+  const handleAddVideo = async (values) => {
+    try {
+      const file = values.videoFile?.[0]?.originFileObj;
+      const videoTitle = values.title?.trim();
+
+      if (!file) {
+        return message.error("Please select a video file.");
+      }
+
+      if (!videoTitle) {
+        return message.error("Please provide a title for the video.");
+      }
+
+      const fileRef = ref(storage, `videos/${Date.now()}_${file.name}`);
+      const task = uploadBytesResumable(fileRef, file);
+
+      await new Promise((resolve, reject) => {
+        task.on("state_changed", null, reject, () => resolve());
+      });
+
+      const videoUrl = await getDownloadURL(fileRef);
+
+      const res = await fetch(
+        "https://indigo-rhapsody-backend-ten.vercel.app/content-video/createAdminVideo",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: localStorage.getItem("userId"),
+            videoUrl,
+            title: videoTitle,
+            is_approved: true,
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || `Server responded ${res.status}`);
+      }
+
+      message.success("Video uploaded & approved!");
+      setAddModalVisible(false);
+      form.resetFields();
+
+      // Refresh the video lists
+      const approvedData = await GetAllVideos();
+      setApprovedVideos(approvedData.videos || []);
+      setFilteredApprovedVideos(approvedData.videos || []);
+    } catch (err) {
+      console.error(err);
+      message.error(`Upload failed: ${err.message}`);
+    }
+  };
+
   const requestColumns = [
     {
       title: "Video URL",
@@ -191,7 +241,7 @@ const VideoContent = () => {
       title: "Instagram",
       dataIndex: "instagram_User",
       key: "instagram_User",
-      render: (text) => text.instagram_User || "N/A",
+      render: (text) => text?.instagram_User || "N/A",
     },
     {
       title: "User",
@@ -223,7 +273,6 @@ const VideoContent = () => {
           <Button type="link" onClick={() => handleView(record.demo_url)}>
             View
           </Button>
-
           <Button
             type="link"
             onClick={() => handleToggleApproval(record._id, record.is_approved)}
@@ -237,6 +286,11 @@ const VideoContent = () => {
   ];
 
   const approvedColumns = [
+    {
+      title: "Title",
+      dataIndex: "title",
+      key: "title",
+    },
     {
       title: "Video URL",
       dataIndex: "videoUrl",
@@ -302,58 +356,30 @@ const VideoContent = () => {
           Add Video
         </Button>
       </div>
+
       <Modal
         title="Create / Upload Video"
         open={addModalVisible}
-        onCancel={() => setAddModalVisible(false)}
+        onCancel={() => {
+          setAddModalVisible(false);
+          form.resetFields();
+        }}
         footer={null}
         destroyOnClose
       >
-        <Form
-          layout="vertical"
-          onFinish={async (values) => {
-            try {
-              // Here's the fix - get the file from the first item in the fileList array
-              const file = values.videoFile?.[0]?.originFileObj;
-
-              if (!file) {
-                return message.error("Please select a video file.");
-              }
-
-              const fileRef = ref(storage, `videos/${Date.now()}_${file.name}`);
-              const task = uploadBytesResumable(fileRef, file);
-
-              await new Promise((resolve, reject) => {
-                task.on("state_changed", null, reject, () => resolve());
-              });
-
-              const videoUrl = await getDownloadURL(fileRef);
-
-              const userId = localStorage.getItem("userId");
-
-              const res = await fetch(
-                "https://indigo-rhapsody-backend-ten.vercel.app/content-video/createAdminVideo",
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    userId,
-                    videoUrl,
-                  }),
-                }
-              );
-              if (!res.ok) throw new Error(`Server responded ${res.status}`);
-
-              message.success("Video uploaded & approved!");
-              setAddModalVisible(false);
-
-              window.location.reload();
-            } catch (err) {
-              console.error(err);
-              message.error(`Upload failed: ${err.message}`);
-            }
-          }}
-        >
+        <Form form={form} layout="vertical" onFinish={handleAddVideo}>
+          <Form.Item
+            label="Title"
+            name="title"
+            rules={[
+              {
+                required: true,
+                message: "Please provide a title for the video",
+              },
+            ]}
+          >
+            <Input />
+          </Form.Item>
           <Form.Item
             label="Video File"
             name="videoFile"
@@ -368,7 +394,7 @@ const VideoContent = () => {
           >
             <Upload.Dragger
               accept="video/*"
-              beforeUpload={() => false} // prevent auto-upload
+              beforeUpload={() => false}
               maxCount={1}
             >
               <p className="ant-upload-drag-icon">
@@ -387,6 +413,7 @@ const VideoContent = () => {
           </Form.Item>
         </Form>
       </Modal>
+
       <div
         style={{
           display: "flex",
@@ -395,7 +422,6 @@ const VideoContent = () => {
         }}
       >
         <h3>Video Applications</h3>
-
         <Search
           placeholder="Search by user name"
           value={searchValue}
@@ -405,6 +431,7 @@ const VideoContent = () => {
           style={{ width: 300 }}
         />
       </div>
+
       <h4>Pending Requests</h4>
       {loadingRequests ? (
         <p>Loading pending videos...</p>
@@ -433,7 +460,6 @@ const VideoContent = () => {
         />
       )}
 
-      {/* Video Modal */}
       <Modal
         title="Video Player"
         visible={isModalVisible}
@@ -471,22 +497,32 @@ const VideoContent = () => {
         {selectedVideo && (
           <div>
             <p>
+              <strong>Title:</strong> {selectedVideo.title || "N/A"}
+            </p>
+            <p>
               <strong>Likes:</strong> {selectedVideo.no_of_likes}
             </p>
             <p>
-              <strong>Total Comments:</strong> {selectedVideo.comments.length}
+              <strong>Total Comments:</strong>{" "}
+              {selectedVideo.comments?.length || 0}
             </p>
-            <p>
-              <strong>Comments:</strong>
-            </p>
-            <ul>
-              {selectedVideo.comments.map((comment) => (
-                <li key={comment._id}>
-                  <strong>{comment.userId.displayName}:</strong>{" "}
-                  {comment.commentText}
-                </li>
-              ))}
-            </ul>
+            {selectedVideo.comments?.length > 0 && (
+              <>
+                <p>
+                  <strong>Comments:</strong>
+                </p>
+                <ul>
+                  {selectedVideo.comments.map((comment) => (
+                    <li key={comment._id}>
+                      <strong>
+                        {comment.userId?.displayName || "Unknown"}:
+                      </strong>{" "}
+                      {comment.commentText}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </div>
         )}
       </Modal>
