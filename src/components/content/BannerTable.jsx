@@ -18,6 +18,7 @@ import {
   Tag,
   Tooltip,
   Progress,
+  Switch,
 } from "antd";
 import {
   UploadOutlined,
@@ -25,48 +26,61 @@ import {
   PlusOutlined,
   DeleteOutlined,
   EyeOutlined,
-  FolderOutlined,
+  PictureOutlined,
   CalendarOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
 } from "@ant-design/icons";
 import {
-  GetCategories,
-  DeleteCategory,
-  AddCategory,
-} from "../../../service/categoryApi";
-import { storage } from "../../../service/FirebaseService";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+  GetBanners,
+  DeleteBanner,
+  CreateBanner,
+  UpdateBanner,
+} from "../../service/bannerApi";
+import { uploadImageToFirebase } from "../../service/FirebaseService";
 
 const { confirm } = Modal;
 const { Title, Text } = Typography;
 
-function CategoryTable({ onDataUpdate }) {
-  const [categories, setCategories] = useState([]);
+function BannerTable({ onDataUpdate }) {
+  const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [modalType, setModalType] = useState("add");
+  const [currentBanner, setCurrentBanner] = useState(null);
   const [form] = Form.useForm();
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    fetchCategories();
+    fetchBanners();
   }, []);
 
-  const fetchCategories = async () => {
+  const fetchBanners = async () => {
     try {
       setLoading(true);
-      const data = await GetCategories();
-      setCategories(data.categories || []);
+      const data = await GetBanners();
+      setBanners(data.banners || []);
     } catch (error) {
-      console.error("Error fetching categories:", error);
-      message.error("Error fetching categories");
+      console.error("Error fetching banners:", error);
+      message.error("Error fetching banners");
     } finally {
       setLoading(false);
     }
   };
 
-  const showModal = () => {
+  const showModal = (type, banner = null) => {
+    setModalType(type);
+    setCurrentBanner(banner);
     setIsModalVisible(true);
-    form.resetFields();
+    if (banner) {
+      form.setFieldsValue({
+        name: banner.name,
+        isActive: banner.isActive !== false,
+      });
+    } else {
+      form.resetFields();
+    }
     setFile(null);
   };
 
@@ -84,31 +98,38 @@ function CategoryTable({ onDataUpdate }) {
     }
   };
 
-  const uploadImageToFirebase = async (file) => {
-    const fileRef = ref(storage, `category/${Date.now()}_${file.name}`);
-    await uploadBytes(fileRef, file);
-    return await getDownloadURL(fileRef);
-  };
-
-  const handleAdd = async (values) => {
+  const handleAddEdit = async (values) => {
     try {
       setUploading(true);
 
-      if (!file) {
+      let imageUrl = currentBanner?.image || "";
+
+      if (file) {
+        imageUrl = await uploadImageToFirebase(file, "banners");
+      } else if (modalType === "add" && !imageUrl) {
         throw new Error("Please upload an image.");
       }
 
-      const imageUrl = await uploadImageToFirebase(file);
-      const categoryData = { name: values.name, imageUrl };
+      const bannerData = {
+        name: values.name,
+        imageUrl,
+        isActive: values.isActive,
+      };
 
-      await AddCategory(categoryData);
-      message.success("Category added successfully");
-      fetchCategories();
+      if (modalType === "add") {
+        await CreateBanner(bannerData);
+        message.success("Banner added successfully");
+      } else {
+        await UpdateBanner(currentBanner._id, bannerData);
+        message.success("Banner updated successfully");
+      }
+
+      fetchBanners();
       if (onDataUpdate) onDataUpdate();
       handleCancel();
     } catch (error) {
-      console.error("Error adding category:", error);
-      message.error(error.message || "Error adding category");
+      console.error("Error saving banner:", error);
+      message.error(error.message || "Error saving banner");
     } finally {
       setUploading(false);
     }
@@ -116,36 +137,49 @@ function CategoryTable({ onDataUpdate }) {
 
   const showDeleteConfirm = (id) => {
     confirm({
-      title: "Are you sure you want to delete this category?",
+      title: "Are you sure you want to delete this banner?",
       icon: <ExclamationCircleOutlined />,
-      content: "This action cannot be undone and will affect all associated subcategories.",
+      content: "This action cannot be undone.",
       okText: "Yes, Delete",
       okType: "danger",
       cancelText: "Cancel",
       onOk: async () => {
         try {
-          await DeleteCategory(id);
-          message.success("Category deleted successfully");
-          fetchCategories();
+          await DeleteBanner(id);
+          message.success("Banner deleted successfully");
+          fetchBanners();
           if (onDataUpdate) onDataUpdate();
         } catch (error) {
-          console.error("Error deleting category:", error);
-          message.error(error.message || "Error deleting category");
+          console.error("Error deleting banner:", error);
+          message.error(error.message || "Error deleting banner");
         }
       },
     });
   };
 
+  const handleToggleStatus = async (id, currentStatus) => {
+    try {
+      const newStatus = !currentStatus;
+      await UpdateBanner(id, { isActive: newStatus });
+      message.success(`Banner ${newStatus ? "activated" : "deactivated"} successfully`);
+      fetchBanners();
+      if (onDataUpdate) onDataUpdate();
+    } catch (error) {
+      console.error("Error updating banner status:", error);
+      message.error("Error updating banner status");
+    }
+  };
+
   const columns = [
     {
-      title: "Category Info",
-      key: "categoryInfo",
+      title: "Banner Info",
+      key: "bannerInfo",
       render: (_, record) => (
         <Space>
           <Avatar
             size={48}
             src={record.image}
-            icon={<FolderOutlined />}
+            icon={<PictureOutlined />}
             style={{ backgroundColor: '#1890ff' }}
           />
           <div>
@@ -167,17 +201,17 @@ function CategoryTable({ onDataUpdate }) {
         imageUrl ? (
           <Tooltip title="Click to view full image">
             <Image
-              width={60}
+              width={80}
               height={60}
               src={imageUrl}
-              alt="Category"
+              alt="Banner"
               style={{ borderRadius: 8, objectFit: 'cover' }}
               fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6UAAABRWlDQ1BJQ0MgUHJvZmlsZQAAKJFjYGASSSwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ16yno6CkYGRAQMDKMwhqj/fAIcloxgHQqxAjIHBEugw5sUIsSQpBobtQPdLciLEVJYzMPBHMDBsayhILEqEO4DxG0txmrERhM29nYGBddr//5/DGRjYNRkY/l7////39v///y4Dmn+LgeHANwDrkl1AuO+pmgAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAwqADAAQAAAABAAAAwwAAAAD9b/HnAAAHlklEQVR4Ae3dP3Ik1RnG4W+FgYxN"
             />
           </Tooltip>
         ) : (
           <div style={{ 
-            width: 60, 
+            width: 80, 
             height: 60, 
             backgroundColor: '#f5f5f5', 
             borderRadius: 8,
@@ -186,10 +220,38 @@ function CategoryTable({ onDataUpdate }) {
             justifyContent: 'center',
             color: '#999'
           }}>
-            <FolderOutlined style={{ fontSize: 24 }} />
+            <PictureOutlined style={{ fontSize: 24 }} />
           </div>
         )
       ),
+    },
+    {
+      title: "Status",
+      dataIndex: "isActive",
+      key: "isActive",
+      render: (isActive, record) => (
+        <Space direction="vertical" size="small">
+          <Tag
+            color={isActive !== false ? "green" : "red"}
+            icon={isActive !== false ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+            style={{ margin: 0 }}
+          >
+            {isActive !== false ? "Active" : "Inactive"}
+          </Tag>
+          <Switch
+            size="small"
+            checked={isActive !== false}
+            onChange={() => handleToggleStatus(record._id, isActive !== false)}
+            checkedChildren="✓"
+            unCheckedChildren="✗"
+          />
+        </Space>
+      ),
+      filters: [
+        { text: "Active", value: true },
+        { text: "Inactive", value: false },
+      ],
+      onFilter: (value, record) => (record.isActive !== false) === value,
     },
     {
       title: "Created Date",
@@ -213,23 +275,23 @@ function CategoryTable({ onDataUpdate }) {
       key: "actions",
       render: (_, record) => (
         <Space size="small">
-          <Tooltip title="View Category Details">
+          <Tooltip title="View Banner Details">
             <Button
               type="text"
               icon={<EyeOutlined />}
               onClick={() => {
                 Modal.info({
-                  title: `Category: ${record.name}`,
+                  title: `Banner: ${record.name}`,
                   content: (
                     <div>
                       <p><strong>Name:</strong> {record.name}</p>
-                      <p><strong>ID:</strong> {record._id}</p>
+                      <p><strong>Status:</strong> {record.isActive !== false ? 'Active' : 'Inactive'}</p>
                       <p><strong>Created:</strong> {new Date(record.createdDate).toLocaleString()}</p>
                       {record.image && (
                         <div>
                           <p><strong>Image:</strong></p>
                           <Image
-                            width={200}
+                            width={300}
                             src={record.image}
                             alt={record.name}
                             style={{ borderRadius: 8 }}
@@ -238,13 +300,21 @@ function CategoryTable({ onDataUpdate }) {
                       )}
                     </div>
                   ),
-                  width: 500,
+                  width: 600,
                 });
               }}
               style={{ color: '#1890ff' }}
             />
           </Tooltip>
-          <Tooltip title="Delete Category">
+          <Tooltip title="Edit Banner">
+            <Button
+              type="text"
+              icon={<PlusOutlined />}
+              onClick={() => showModal("edit", record)}
+              style={{ color: '#52c41a' }}
+            />
+          </Tooltip>
+          <Tooltip title="Delete Banner">
             <Button
               type="text"
               danger
@@ -257,6 +327,9 @@ function CategoryTable({ onDataUpdate }) {
     },
   ];
 
+  const activeCount = banners.filter(banner => banner.isActive !== false).length;
+  const inactiveCount = banners.filter(banner => banner.isActive === false).length;
+
   return (
     <div>
       {/* Summary Cards */}
@@ -264,30 +337,30 @@ function CategoryTable({ onDataUpdate }) {
         <Col xs={24} sm={8}>
           <Card className="summary-card">
             <Statistic
-              title="Total Categories"
-              value={categories.length}
+              title="Total Banners"
+              value={banners.length}
               valueStyle={{ color: '#1890ff' }}
-              prefix={<FolderOutlined />}
+              prefix={<PictureOutlined />}
             />
           </Card>
         </Col>
         <Col xs={24} sm={8}>
           <Card className="summary-card">
             <Statistic
-              title="Categories with Images"
-              value={categories.filter(cat => cat.image).length}
+              title="Active Banners"
+              value={activeCount}
               valueStyle={{ color: '#52c41a' }}
-              prefix={<UploadOutlined />}
+              prefix={<CheckCircleOutlined />}
             />
           </Card>
         </Col>
         <Col xs={24} sm={8}>
           <Card className="summary-card">
             <Statistic
-              title="Categories without Images"
-              value={categories.filter(cat => !cat.image).length}
+              title="Inactive Banners"
+              value={inactiveCount}
               valueStyle={{ color: '#fa8c16' }}
-              prefix={<FolderOutlined />}
+              prefix={<CloseCircleOutlined />}
             />
           </Card>
         </Col>
@@ -299,10 +372,10 @@ function CategoryTable({ onDataUpdate }) {
           type="primary" 
           icon={<PlusOutlined />}
           size="large"
-          onClick={showModal}
+          onClick={() => showModal("add")}
           style={{ borderRadius: 8 }}
         >
-          Add Category
+          Add Banner
         </Button>
       </div>
 
@@ -311,37 +384,41 @@ function CategoryTable({ onDataUpdate }) {
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px' }}>
             <Progress type="circle" percent={75} size="small" />
-            <Text style={{ display: 'block', marginTop: 16 }}>Loading categories...</Text>
+            <Text style={{ display: 'block', marginTop: 16 }}>Loading banners...</Text>
           </div>
-        ) : categories.length === 0 ? (
+        ) : banners.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px' }}>
-            <FolderOutlined style={{ fontSize: 48, color: '#d9d9d9' }} />
+            <PictureOutlined style={{ fontSize: 48, color: '#d9d9d9' }} />
             <Text type="secondary" style={{ display: 'block', marginTop: 16 }}>
-              No categories found. Create your first category!
+              No banners found. Create your first banner!
             </Text>
           </div>
         ) : (
           <Table
             columns={columns}
-            dataSource={categories}
+            dataSource={banners}
             rowKey="_id"
             pagination={{
               pageSize: 8,
               showSizeChanger: true,
               showQuickJumper: true,
-              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} categories`
+              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} banners`
             }}
             className="modern-table"
           />
         )}
       </Card>
 
-      {/* Add Category Modal */}
+      {/* Add/Edit Modal */}
       <Modal
         title={
           <Space>
-            <PlusOutlined style={{ color: '#1890ff' }} />
-            <span>Add New Category</span>
+            {modalType === "add" ? (
+              <PlusOutlined style={{ color: '#52c41a' }} />
+            ) : (
+              <PlusOutlined style={{ color: '#1890ff' }} />
+            )}
+            <span>{modalType === "add" ? "Add New Banner" : "Edit Banner"}</span>
           </Space>
         }
         open={isModalVisible}
@@ -350,28 +427,39 @@ function CategoryTable({ onDataUpdate }) {
         width={600}
         className="modern-modal"
       >
-        <Form form={form} layout="vertical" onFinish={handleAdd}>
+        <Form form={form} layout="vertical" onFinish={handleAddEdit}>
           <Form.Item
             name="name"
-            label="Category Name"
+            label="Banner Name"
             rules={[
-              { required: true, message: "Please enter the category name" },
-              { min: 2, message: "Category name must be at least 2 characters" }
+              { required: true, message: "Please enter the banner name" },
+              { min: 2, message: "Banner name must be at least 2 characters" }
             ]}
           >
             <Input 
-              placeholder="Enter category name..."
+              placeholder="Enter banner name..."
               size="large"
               style={{ borderRadius: 8 }}
             />
           </Form.Item>
           
           <Form.Item
-            name="image"
-            label="Category Image"
+            name="isActive"
+            label="Banner Status"
+            valuePropName="checked"
+            initialValue={true}
+          >
+            <Switch 
+              checkedChildren="Active" 
+              unCheckedChildren="Inactive"
+            />
+          </Form.Item>
+          
+          <Form.Item
+            label="Banner Image"
             rules={[
               {
-                required: true,
+                required: modalType === "add",
                 message: "Please upload an image",
               },
             ]}
@@ -386,7 +474,10 @@ function CategoryTable({ onDataUpdate }) {
                 if (!isLt2M) {
                   message.error("Image must be smaller than 2MB!");
                 }
-                return isImage && isLt2M ? true : Upload.LIST_IGNORE;
+                if (isImage && isLt2M) {
+                  setFile(file);
+                }
+                return false;
               }}
               onChange={handleFileChange}
               showUploadList={false}
@@ -405,6 +496,17 @@ function CategoryTable({ onDataUpdate }) {
                 <Tag color="blue">{file.name}</Tag>
               </div>
             )}
+            {modalType === "edit" && currentBanner?.image && !file && (
+              <div style={{ marginTop: 8 }}>
+                <Text type="secondary">Current image:</Text>
+                <Image
+                  width={100}
+                  src={currentBanner.image}
+                  alt="Current Banner"
+                  style={{ marginTop: 8, borderRadius: 8 }}
+                />
+              </div>
+            )}
           </Form.Item>
 
           <Form.Item>
@@ -416,7 +518,10 @@ function CategoryTable({ onDataUpdate }) {
               loading={uploading}
               style={{ borderRadius: 8 }}
             >
-              {uploading ? 'Creating Category...' : 'Create Category'}
+              {uploading 
+                ? (modalType === "add" ? 'Creating Banner...' : 'Updating Banner...')
+                : (modalType === "add" ? 'Create Banner' : 'Update Banner')
+              }
             </Button>
           </Form.Item>
         </Form>
@@ -425,4 +530,4 @@ function CategoryTable({ onDataUpdate }) {
   );
 }
 
-export default CategoryTable;
+export default BannerTable;

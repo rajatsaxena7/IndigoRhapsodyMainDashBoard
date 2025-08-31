@@ -1,242 +1,172 @@
-import React, { useEffect, useState } from "react";
-import { Table, message, Modal, Form, Input, Button, Upload } from "antd";
-import { PlusOutlined, UploadOutlined } from "@ant-design/icons";
-import { uploadImageToFirebase } from "./../../service/FirebaseService"; // Import the upload function
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  Row,
+  Col,
+  Statistic,
+  Typography,
+  Space,
+  Button,
+  Tabs,
+  Badge,
+  Divider,
+} from "antd";
+import {
+  PictureOutlined,
+  FileTextOutlined,
+  PlusOutlined,
+  EyeOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  CalendarOutlined,
+  UploadOutlined,
+} from "@ant-design/icons";
+import { BannerContentWrap } from "./bannerPage.styles";
+import BannerTable from "../../components/content/BannerTable";
+import BlogsTable from "../../components/content/BlogsTable";
+import { GetBanners } from "../../service/bannerApi";
+import { getBlogs } from "../../service/blogsService";
 
-const API_BASE_URL = "https://indigo-rhapsody-backend-ten.vercel.app";
+const { Title, Text } = Typography;
+const { TabPane } = Tabs;
 
-// API Function to Fetch Banners
-const GetCategories = async () => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/banner/`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message);
-    }
-    return await response.json();
-  } catch (error) {
-    throw new Error(error.message);
-  }
-};
+const ContentManagement = () => {
+  const [stats, setStats] = useState({
+    totalBanners: 0,
+    totalBlogs: 0,
+    activeBanners: 0,
+    publishedBlogs: 0,
+  });
+  const [loading, setLoading] = useState(true);
 
-// API Function to Delete a Banner
-const DeleteBanner = async (bannerId) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/banner/${bannerId}`, {
-      method: "DELETE",
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to delete banner");
-    }
-    return await response.json();
-  } catch (error) {
-    throw new Error(error.message);
-  }
-};
+  useEffect(() => {
+    fetchStats();
+  }, []);
 
-// API Function to Create a Banner
-const CreateBanner = async (data) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/banner/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message);
-    }
-    return await response.json();
-  } catch (error) {
-    throw new Error(error.message);
-  }
-};
-
-const BannerTable = () => {
-  const [loading, setLoading] = useState(false);
-  const [banners, setBanners] = useState([]);
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [uploading, setUploading] = useState(false);
-
-  const [form] = Form.useForm();
-
-  const fetchBanners = async () => {
-    setLoading(true);
+  const fetchStats = async () => {
     try {
-      const data = await GetCategories();
-      setBanners(data.banners || []);
-      message.success("Banners loaded successfully!");
+      setLoading(true);
+      const [bannersData, blogsData] = await Promise.all([
+        GetBanners(),
+        getBlogs(),
+      ]);
+
+      const banners = bannersData.banners || [];
+      const blogs = blogsData || [];
+      const activeBanners = banners.filter(banner => banner.isActive !== false).length;
+      const publishedBlogs = blogs.filter(blog => blog.status === 'published').length;
+
+      setStats({
+        totalBanners: banners.length,
+        totalBlogs: blogs.length,
+        activeBanners,
+        publishedBlogs,
+      });
     } catch (error) {
-      message.error(`Error: ${error.message}`);
+      console.error("Error fetching content stats:", error);
     } finally {
       setLoading(false);
     }
   };
-  const handleDeleteBanner = async (bannerId) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/banner/${bannerId}`, {
-        method: "DELETE",
-      });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error ${response.status}: ${errorText}`);
-      }
-
-      if (response.status !== 204) {
-        // Or 200, if your server sends JSON
-        const data = await response.json();
-        message.success("Banner deleted successfully"); // Show success message
-        fetchBanners(); // Refresh the banner list (recommended over full reload)
-        return data;
-      } else {
-        message.success("Banner deleted successfully"); // Show success message for 204
-        fetchBanners(); // Refresh the banner list
-        return;
-      }
-    } catch (error) {
-      console.error("DeleteBanner error:", error);
-      message.error(`Error deleting banner: ${error.message}`); // Show error message to user
-      throw error;
-    }
+  const handleDataUpdate = () => {
+    fetchStats();
   };
-  const handleAddBanner = async (values) => {
-    try {
-      setUploading(true);
-
-      // Access the first file in the fileList
-      const fileObj = values.file[0];
-
-      // Upload image to Firebase and get the URL
-      const imageUrl = await uploadImageToFirebase(
-        fileObj.originFileObj,
-        "banners"
-      );
-
-      // Send the image URL and name to the backend
-      const response = await CreateBanner({ name: values.name, imageUrl });
-      message.success(response.message);
-
-      setIsModalVisible(false);
-      form.resetFields(); // Reset form
-      fetchBanners(); // Refresh the banner list
-    } catch (error) {
-      message.error(`Error: ${error.message}`);
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchBanners();
-  }, []);
-
-  const columns = [
-    {
-      title: "ID",
-      dataIndex: "_id",
-      key: "_id",
-    },
-    {
-      title: "Name",
-      dataIndex: "name",
-      key: "name",
-    },
-    {
-      title: "Image",
-      dataIndex: "image",
-      key: "image",
-      render: (text) => <img src={text} alt="Banner" style={{ width: 100 }} />,
-    },
-    {
-      title: "Created Date",
-      dataIndex: "createdDate",
-      key: "createdDate",
-      render: (text) => new Date(text).toLocaleDateString(),
-    },
-    {
-      title: "Action",
-      key: "action",
-      render: (text, record) => (
-        <Button
-          type="link"
-          danger
-          onClick={() => handleDeleteBanner(record._id)}
-        >
-          Delete
-        </Button>
-      ),
-    },
-  ];
 
   return (
-    <div>
-      <Button
-        type="primary"
-        icon={<PlusOutlined />}
-        style={{ marginBottom: 16 }}
-        onClick={() => setIsModalVisible(true)}
-      >
-        Add Banner
-      </Button>
-      <Table
-        dataSource={banners.map((item, index) => ({ ...item, key: index }))}
-        columns={columns}
-        loading={loading}
-        pagination={{ pageSize: 5 }}
-      />
+    <BannerContentWrap>
+      {/* Header Section */}
+      <div className="page-header">
+        <div className="header-content">
+          <Title level={2} style={{ margin: 0, color: '#1a1a1a' }}>
+            <PictureOutlined style={{ marginRight: 12, color: '#1890ff' }} />
+            Content Management
+          </Title>
+          <Text type="secondary" style={{ fontSize: '16px' }}>
+            Manage banners, blogs, and other content assets
+          </Text>
+        </div>
+      </div>
 
-      <Modal
-        title="Add Banner"
-        visible={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        footer={null}
-      >
-        <Form form={form} layout="vertical" onFinish={handleAddBanner}>
-          <Form.Item
-            name="name"
-            label="Banner Name"
-            rules={[
-              { required: true, message: "Please input the banner name" },
-            ]}
-          >
-            <Input placeholder="Enter banner name" />
-          </Form.Item>
-          <Form.Item
-            name="file"
-            label="Upload Image"
-            valuePropName="fileList"
-            getValueFromEvent={(e) => {
-              console.log("Upload event:", e);
-              return e && e.fileList;
-            }}
-            rules={[
-              { required: true, message: "Please upload a banner image" },
-            ]}
-          >
-            <Upload
-              name="file"
-              listType="picture"
-              maxCount={1}
-              beforeUpload={() => false} // Prevent automatic upload
-            >
-              <Button icon={<UploadOutlined />}>Upload</Button>
-            </Upload>
-          </Form.Item>
+      {/* Statistics Cards */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 32 }}>
+        <Col xs={24} sm={12} md={6}>
+          <Card className="stat-card">
+            <Statistic
+              title="Total Banners"
+              value={stats.totalBanners}
+              valueStyle={{ color: '#1890ff' }}
+              prefix={<PictureOutlined />}
+              loading={loading}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card className="stat-card">
+            <Statistic
+              title="Active Banners"
+              value={stats.activeBanners}
+              valueStyle={{ color: '#52c41a' }}
+              prefix={<UploadOutlined />}
+              loading={loading}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card className="stat-card">
+            <Statistic
+              title="Total Blogs"
+              value={stats.totalBlogs}
+              valueStyle={{ color: '#722ed1' }}
+              prefix={<FileTextOutlined />}
+              loading={loading}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card className="stat-card">
+            <Statistic
+              title="Published Blogs"
+              value={stats.publishedBlogs}
+              valueStyle={{ color: '#52c41a' }}
+              prefix={<EditOutlined />}
+              loading={loading}
+            />
+          </Card>
+        </Col>
+      </Row>
 
-          <Form.Item>
-            <Button type="primary" htmlType="submit" block loading={uploading}>
-              Submit
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
+      {/* Content Tabs */}
+      <Card className="content-card">
+        <Tabs defaultActiveKey="banners" size="large">
+          <TabPane
+            tab={
+              <Space>
+                <PictureOutlined />
+                <span>Banners</span>
+                <Badge count={stats.totalBanners} style={{ backgroundColor: '#1890ff' }} />
+              </Space>
+            }
+            key="banners"
+          >
+            <BannerTable onDataUpdate={handleDataUpdate} />
+          </TabPane>
+          <TabPane
+            tab={
+              <Space>
+                <FileTextOutlined />
+                <span>Blogs</span>
+                <Badge count={stats.totalBlogs} style={{ backgroundColor: '#722ed1' }} />
+              </Space>
+            }
+            key="blogs"
+          >
+            <BlogsTable onDataUpdate={handleDataUpdate} />
+          </TabPane>
+        </Tabs>
+      </Card>
+    </BannerContentWrap>
   );
 };
 
-export default BannerTable;
+export default ContentManagement;

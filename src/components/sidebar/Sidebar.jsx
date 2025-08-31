@@ -13,6 +13,8 @@ import { TbCategoryPlus } from "react-icons/tb";
 import { LiaVideoSolid } from "react-icons/lia";
 import { PiSignOutLight } from "react-icons/pi";
 import { SiContentful } from "react-icons/si";
+import { BsCartCheck } from "react-icons/bs";
+import { logout } from "../../service/apiUtils";
 
 function Sidebar() {
   const isSidebarOpen = useSelector((state) => state.isSidebarOpen);
@@ -20,8 +22,7 @@ function Sidebar() {
   const navigate = useNavigate();
 
   const handleSignOut = () => {
-    localStorage.clear(); // Clear all localStorage items
-    navigate("/"); // Redirect to the login page
+    logout(); // Use our centralized logout function
   };
 
   return (
@@ -64,6 +65,30 @@ function Sidebar() {
                   <SiAltiumdesigner style={{ color: "black" }} />
                 </span>
                 <span className="menu-link-text">Designers</span>
+              </NavLink>
+            </li>
+            <li className="menu-item">
+              <NavLink
+                to="/products"
+                activeClassName="active"
+                className="menu-link"
+              >
+                <span className="menu-link-icon">
+                  <LiaProductHunt style={{ color: "black" }} />
+                </span>
+                <span className="menu-link-text">Products</span>
+              </NavLink>
+            </li>
+            <li className="menu-item">
+              <NavLink
+                to="/orders"
+                activeClassName="active"
+                className="menu-link"
+              >
+                <span className="menu-link-icon">
+                  <BsCartCheck style={{ color: "black" }} />
+                </span>
+                <span className="menu-link-text">Orders</span>
               </NavLink>
             </li>
             <li className="menu-item">

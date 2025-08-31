@@ -1,7 +1,7 @@
 import styled from "styled-components";
 import { BlockContentWrap } from "../../styles/global/default";
 
-export const ManageCategoriesWrap = styled.div`
+export const ManageQueriesWrap = styled.div`
   ${BlockContentWrap};
   padding: 24px;
   background: #f5f5f5;
@@ -14,6 +14,9 @@ export const ManageCategoriesWrap = styled.div`
     margin-bottom: 24px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     border: 1px solid #f0f0f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 
     .header-content {
       display: flex;
@@ -52,32 +55,25 @@ export const ManageCategoriesWrap = styled.div`
     border: 1px solid #f0f0f0;
     background: white;
 
-    .ant-tabs-nav {
-      margin-bottom: 24px;
-      padding: 0 24px;
-      background: #fafafa;
-      border-radius: 8px 8px 0 0;
-    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0;
 
-    .ant-tabs-tab {
-      padding: 16px 24px;
-      font-weight: 500;
-      transition: all 0.3s ease;
-
-      &:hover {
-        color: #1890ff;
-      }
-
-      &.ant-tabs-tab-active {
-        background: white;
-        border-radius: 8px 8px 0 0;
-        box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+      .header-info {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
       }
     }
+  }
 
-    .ant-tabs-content-holder {
-      padding: 24px;
-    }
+  .filter-card {
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid #f0f0f0;
+    background: white;
   }
 
   .summary-card {
@@ -133,21 +129,6 @@ export const ManageCategoriesWrap = styled.div`
     }
   }
 
-  .upload-area {
-    border: 2px dashed #d9d9d9;
-    border-radius: 8px;
-    padding: 32px 16px;
-    text-align: center;
-    background: #fafafa;
-    transition: all 0.3s ease;
-    cursor: pointer;
-
-    &:hover {
-      border-color: #1890ff;
-      background: #f0f8ff;
-    }
-  }
-
   .modern-modal {
     .ant-modal-header {
       border-bottom: 1px solid #f0f0f0;
@@ -188,19 +169,16 @@ export const ManageCategoriesWrap = styled.div`
     .page-header {
       padding: 16px;
       margin-bottom: 16px;
+      flex-direction: column;
+      gap: 16px;
+      align-items: flex-start;
     }
 
     .content-card {
-      .ant-tabs-nav {
-        padding: 0 16px;
-      }
-
-      .ant-tabs-tab {
-        padding: 12px 16px;
-      }
-
-      .ant-tabs-content-holder {
-        padding: 16px;
+      .card-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
       }
     }
 

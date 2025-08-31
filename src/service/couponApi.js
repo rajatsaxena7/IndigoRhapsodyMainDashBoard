@@ -1,61 +1,65 @@
-const apiRequest = async (url, options) => {
-  try {
-    const response = await fetch(url, options);
+import { apiCall } from "./apiUtils";
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "An error occurred");
-    }
-
-    return await response.json(); // Parse response data only once
-  } catch (error) {
-    throw new Error(error.message || "An unexpected error occurred");
-  }
-};
 export const GetCoupons = async () => {
-  return await apiRequest(
-    `https://indigo-rhapsody-backend-ten.vercel.app/coupon`,
-    {
+  try {
+    return await apiCall("/coupon", {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
+    });
+  } catch (error) {
+    throw new Error(error.message || "Failed to fetch coupons");
+  }
 };
 
 export const SearchUsers = async (searchTerm) => {
-  return await apiRequest(
-    `https://indigo-rhapsody-backend-ten.vercel.app/coupon/searchUser?q=${searchTerm}`,
-    {
+  try {
+    return await apiCall(`/coupon/searchUser?q=${searchTerm}`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
+    });
+  } catch (error) {
+    throw new Error(error.message || "Failed to search users");
+  }
 };
 
 export const DeleteCoupon = async (couponId) => {
-  return await apiRequest(
-    `https://indigo-rhapsody-backend-ten.vercel.app/coupon/${couponId}`,
-    {
+  try {
+    return await apiCall(`/coupon/${couponId}`, {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
+    });
+  } catch (error) {
+    throw new Error(error.message || "Failed to delete coupon");
+  }
 };
 
 export const ApplyCoupon = async (couponId) => {
-  return await apiRequest(
-    `https://indigo-rhapsody-backend-ten.vercel.app/coupon/apply/${couponId}`,
-    {
-      method: "POST", // Use POST or PATCH for applying a coupon
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
+  try {
+    return await apiCall(`/coupon/apply/${couponId}`, {
+      method: "POST",
+    });
+  } catch (error) {
+    throw new Error(error.message || "Failed to apply coupon");
+  }
+};
+
+// Create new coupon
+export const CreateCoupon = async (couponData) => {
+  try {
+    return await apiCall("/coupon", {
+      method: "POST",
+      body: JSON.stringify(couponData),
+    });
+  } catch (error) {
+    throw new Error(error.message || "Failed to create coupon");
+  }
+};
+
+// Update coupon
+export const UpdateCoupon = async (couponId, couponData) => {
+  try {
+    return await apiCall(`/coupon/${couponId}`, {
+      method: "PUT",
+      body: JSON.stringify(couponData),
+    });
+  } catch (error) {
+    throw new Error(error.message || "Failed to update coupon");
+  }
 };

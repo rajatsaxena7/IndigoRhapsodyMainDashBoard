@@ -1,35 +1,58 @@
-const API_BASE_URL = "https://indigo-rhapsody-backend-ten.vercel.app";
+import { apiCall } from "./apiUtils";
 
-// Get all blogs
+// Get all queries
 export const getQueries = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/queries/queries`, {
+    return await apiCall("/queries/queries", {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message);
-    }
-    return await response.json();
   } catch (error) {
-    throw new Error(error.message);
+    throw new Error(error.message || "Failed to fetch queries");
   }
 };
 
-export const updateBlog = async (id, blogData) => {
+// Update query status
+export const updateQuery = async (id, queryData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/queries/queries/${id}`, {
+    return await apiCall(`/queries/queries/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(blogData),
+      body: JSON.stringify(queryData),
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message);
-    }
-    return await response.json();
   } catch (error) {
-    throw new Error(error.message);
+    throw new Error(error.message || "Failed to update query");
+  }
+};
+
+// Delete query
+export const deleteQuery = async (id) => {
+  try {
+    return await apiCall(`/queries/queries/${id}`, {
+      method: "DELETE",
+    });
+  } catch (error) {
+    throw new Error(error.message || "Failed to delete query");
+  }
+};
+
+// Get query by ID
+export const getQueryById = async (id) => {
+  try {
+    return await apiCall(`/queries/queries/${id}`, {
+      method: "GET",
+    });
+  } catch (error) {
+    throw new Error(error.message || "Failed to fetch query details");
+  }
+};
+
+// Mark query as resolved
+export const resolveQuery = async (id) => {
+  try {
+    return await apiCall(`/queries/queries/${id}/resolve`, {
+      method: "PUT",
+      body: JSON.stringify({ status: "resolved" }),
+    });
+  } catch (error) {
+    throw new Error(error.message || "Failed to resolve query");
   }
 };
