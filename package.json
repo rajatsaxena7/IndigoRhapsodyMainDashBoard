@@ -5,9 +5,20 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:production": "node scripts/switch-env.js production && vite",
+    "dev:testing": "node scripts/switch-env.js testing && vite",
     "build": "vite build",
+    "build:production": "node scripts/switch-env.js production && vite build",
+    "build:testing": "node scripts/switch-env.js testing && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "preview:production": "node scripts/switch-env.js production && vite preview",
+    "preview:testing": "node scripts/switch-env.js testing && vite preview",
+    "env:production": "node scripts/switch-env.js production",
+    "env:testing": "node scripts/switch-env.js testing",
+    "env:status": "node scripts/switch-env.js",
+    "env:init": "node scripts/init-env.js create",
+    "env:check": "node scripts/init-env.js status"
   },
   "dependencies": {
     "@ant-design/plots": "^2.3.2",
@@ -16,6 +27,7 @@
     "axios": "^1.7.7",
     "d3": "^7.9.0",
     "d3-scale": "^4.0.2",
+    "dotenv": "^17.2.3",
     "firebase": "^11.0.1",
     "js-cookie": "^3.0.5",
     "leaflet": "^1.9.4",

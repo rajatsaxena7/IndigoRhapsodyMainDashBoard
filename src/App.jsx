@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ToastContainer } from "react-toastify";
 import { ThemeProvider } from "styled-components";
 import { GlobalStyles } from "./styles/global/GlobalStyles";
+import { initializeEnvironment } from "./config/env-validator";
 import Loginscreen from "./pages/loginScreen/LoginScreen";
 import {
   BrowserRouter as Router,
@@ -28,6 +29,15 @@ import ManageQueries from "./pages/manageQueries/manageQueries";
 import OrdersPage from "./pages/orders/ordersPage";
 
 function App() {
+  // Initialize environment on app start
+  useEffect(() => {
+    try {
+      initializeEnvironment();
+    } catch (error) {
+      console.error('Failed to initialize environment:', error);
+    }
+  }, []);
+
   return (
     <ThemeProvider theme={theme}>
       <ToastContainer position="top-right" autoClose={2500} />

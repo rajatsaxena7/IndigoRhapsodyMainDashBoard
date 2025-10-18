@@ -1,7 +1,9 @@
+import { API_BASE_URL } from "../config/environment";
+
 export const GetDetailForDesigner = async (emailId, passWord) => {
   try {
     const response = await fetch(
-      `https://indigo-rhapsody-backend-ten.vercel.app/user/adminLogin`,
+      `${API_BASE_URL}/user/adminLogin`,
       {
         method: "POST",
         headers: {

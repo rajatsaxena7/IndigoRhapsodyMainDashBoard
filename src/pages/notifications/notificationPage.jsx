@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Table, Button, Tag, Space, Modal, Form, Input, message } from "antd";
 import axios from "axios";
+import { API_BASE_URL } from "../../config/environment";
 
 const NotificationPage = () => {
   const [dataSource, setDataSource] = useState([]);
@@ -11,8 +12,8 @@ const NotificationPage = () => {
   const fetchNotifications = async () => {
     try {
       const response = await axios.get(
-        "https://indigo-rhapsody-backend-ten.vercel.app/notification/broadcast/all"
-      ); // Update with your API path
+        `${API_BASE_URL}/notification/broadcast/all`
+      );
       setDataSource(response.data.data);
     } catch (error) {
       message.error("Failed to fetch notifications.");
@@ -33,7 +34,7 @@ const NotificationPage = () => {
     try {
       setLoading(true);
       const response = await axios.post(
-        "https://indigo-rhapsody-backend-ten.vercel.app/notification/send-notification-to-all",
+        `${API_BASE_URL}/notification/send-notification-to-all`,
         {
           title: values.title,
           body: values.body,

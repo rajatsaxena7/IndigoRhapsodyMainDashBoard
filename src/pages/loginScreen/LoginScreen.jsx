@@ -5,11 +5,12 @@ import "react-toastify/dist/ReactToastify.css";
 import styled from "styled-components";
 import Cookies from "js-cookie";
 import { apiCall } from "../../service/apiUtils";
+import { API_BASE_URL } from "../../config/environment";
 
 async function loginUser(email, password) {
   try {
     const response = await fetch(
-      "https://indigo-rhapsody-backend-ten.vercel.app/auth/admin-login",
+      `${API_BASE_URL}/auth/admin-login`,
       {
         method: "POST",
         headers: {

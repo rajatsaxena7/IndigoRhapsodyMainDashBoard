@@ -1,4 +1,5 @@
 import { apiCall, getAuthToken } from './apiUtils';
+import { API_BASE_URL } from '../config/environment';
 
 // Get all products with authentication
 export const getAllProducts = async () => {
@@ -6,16 +7,16 @@ export const getAllProducts = async () => {
     let allProducts = [];
     let currentPage = 1;
     let hasNext = true;
-    
+
     // Fetch all pages to get all products
     while (hasNext) {
       const data = await apiCall(`/products/all-complete?page=${currentPage}&limit=100`, {
         method: 'GET'
       });
-      
+
       if (data.success && data.data && data.data.products) {
         allProducts = [...allProducts, ...data.data.products];
-        
+
         // Check if there are more pages
         if (data.data.pagination && data.data.pagination.hasNext) {
           currentPage++;
@@ -26,7 +27,7 @@ export const getAllProducts = async () => {
         hasNext = false;
       }
     }
-    
+
     // Return in the same format as expected
     return {
       success: true,
@@ -82,7 +83,7 @@ export const bulkUpdateProducts = async (csvFile) => {
 
     // Use apiCall with custom headers for FormData
     const token = getAuthToken();
-    const response = await fetch(`${apiCall.BASE_URL || 'https://indigo-rhapsody-backend-ten.vercel.app'}/products/bulk-update`, {
+    const response = await fetch(`${API_BASE_URL}/products/bulk-update`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
