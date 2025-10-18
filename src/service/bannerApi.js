@@ -1,18 +1,58 @@
-const API_BASE_URL = "https://indigo-rhapsody-backend-ten.vercel.app";
+import { apiCall } from "./apiUtils";
 
-// Get all categories
-export const GetCategories = async () => {
+// Get all banners
+export const GetBanners = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/banner/`, {
+    return await apiCall("/banner/", {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message);
-    }
-    return await response.json();
   } catch (error) {
-    throw new Error(error.message);
+    throw new Error(error.message || "Failed to fetch banners");
+  }
+};
+
+// Create new banner
+export const CreateBanner = async (bannerData) => {
+  try {
+    return await apiCall("/banner/", {
+      method: "POST",
+      body: JSON.stringify(bannerData),
+    });
+  } catch (error) {
+    throw new Error(error.message || "Failed to create banner");
+  }
+};
+
+// Update banner
+export const UpdateBanner = async (bannerId, bannerData) => {
+  try {
+    return await apiCall(`/banner/${bannerId}`, {
+      method: "PUT",
+      body: JSON.stringify(bannerData),
+    });
+  } catch (error) {
+    throw new Error(error.message || "Failed to update banner");
+  }
+};
+
+// Delete banner
+export const DeleteBanner = async (bannerId) => {
+  try {
+    return await apiCall(`/banner/${bannerId}`, {
+      method: "DELETE",
+    });
+  } catch (error) {
+    throw new Error(error.message || "Failed to delete banner");
+  }
+};
+
+// Get banner by ID
+export const GetBannerById = async (bannerId) => {
+  try {
+    return await apiCall(`/banner/${bannerId}`, {
+      method: "GET",
+    });
+  } catch (error) {
+    throw new Error(error.message || "Failed to fetch banner details");
   }
 };

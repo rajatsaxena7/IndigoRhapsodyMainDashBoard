@@ -1,17 +1,11 @@
-const API_BASE_URL = "https://indigo-rhapsody-backend-ten.vercel.app";
+import { apiCall } from "./apiUtils";
 
 // Get all categories
 export const GetCategories = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/category`, {
+    return await apiCall("/category", {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message);
-    }
-    return await response.json();
   } catch (error) {
     throw new Error(error.message);
   }
@@ -19,18 +13,9 @@ export const GetCategories = async () => {
 
 export const GetSubCategories = async () => {
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/subcategory/subcategoriesall`,
-      {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message);
-    }
-    return await response.json();
+    return await apiCall("/subcategory/subcategoriesall", {
+      method: "GET",
+    });
   } catch (error) {
     throw new Error(error.message);
   }
@@ -39,18 +24,9 @@ export const GetSubCategories = async () => {
 // Delete a category by ID
 export const DeleteCategory = async (categoryId) => {
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/category/category/${categoryId}`,
-      {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message);
-    }
-    return await response.json();
+    return await apiCall(`/category/category/${categoryId}`, {
+      method: "DELETE",
+    });
   } catch (error) {
     throw new Error(error.message);
   }
@@ -59,16 +35,10 @@ export const DeleteCategory = async (categoryId) => {
 // Add a new category
 export const AddCategory = async (categoryData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/category/`, {
+    return await apiCall("/category/", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(categoryData),
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message);
-    }
-    return await response.json();
   } catch (error) {
     throw new Error(error.message);
   }
@@ -77,19 +47,10 @@ export const AddCategory = async (categoryData) => {
 // Update a category by ID
 export const UpdateCategory = async (categoryId, categoryData) => {
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/category/category/${categoryId}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(categoryData),
-      }
-    );
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message);
-    }
-    return await response.json();
+    return await apiCall(`/category/category/${categoryId}`, {
+      method: "PUT",
+      body: JSON.stringify(categoryData),
+    });
   } catch (error) {
     throw new Error(error.message);
   }
@@ -98,19 +59,10 @@ export const UpdateCategory = async (categoryId, categoryData) => {
 // Approve or Unapprove a subcategory by ID
 export const ApproveSubCategory = async (subCategoryId, isApproved) => {
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/subcategory/subcategory/${subCategoryId}/approve`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isApproved }),
-      }
-    );
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message);
-    }
-    return await response.json();
+    return await apiCall(`/subcategory/subcategory/${subCategoryId}/approve`, {
+      method: "PATCH",
+      body: JSON.stringify({ isApproved }),
+    });
   } catch (error) {
     throw new Error(error.message);
   }
@@ -118,19 +70,10 @@ export const ApproveSubCategory = async (subCategoryId, isApproved) => {
 
 export const UpdateSubCategory = async (subCategoryId, subCategoryData) => {
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/subcategory/${subCategoryId}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(subCategoryData),
-      }
-    );
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message);
-    }
-    return await response.json();
+    return await apiCall(`/subcategory/${subCategoryId}`, {
+      method: "PUT",
+      body: JSON.stringify(subCategoryData),
+    });
   } catch (error) {
     throw new Error(error.message);
   }
@@ -138,16 +81,10 @@ export const UpdateSubCategory = async (subCategoryId, subCategoryData) => {
 
 export const CreateSubCategory = async (subCategoryData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/subcategory/`, {
+    return await apiCall("/subcategory/", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(subCategoryData),
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message);
-    }
-    return await response.json();
   } catch (error) {
     throw new Error(error.message);
   }
@@ -155,19 +92,34 @@ export const CreateSubCategory = async (subCategoryData) => {
 
 export const DeleteSubCategory = async (subCategoryID) => {
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/subcategory/delete/${subCategoryID}`,
-      {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message);
-    }
-    return await response.json();
+    return await apiCall(`/subcategory/delete/${subCategoryID}`, {
+      method: "DELETE",
+    });
   } catch (error) {
     throw new Error(error.message);
+  }
+};
+
+// Get all categories for filter dropdown
+export const getAllCategoriesForFilter = async () => {
+  try {
+    // Use the existing working API function
+    const response = await GetCategories();
+    return response;
+  } catch (error) {
+    console.error("Category filter API error:", error);
+    throw new Error(error.message || 'Failed to fetch categories');
+  }
+};
+
+// Get all subcategories for filter dropdown
+export const getAllSubCategoriesForFilter = async () => {
+  try {
+    // Use the existing working API function
+    const response = await GetSubCategories();
+    return response;
+  } catch (error) {
+    console.error("Subcategory filter API error:", error);
+    throw new Error(error.message || 'Failed to fetch subcategories');
   }
 };

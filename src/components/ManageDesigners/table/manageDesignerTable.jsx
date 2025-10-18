@@ -18,6 +18,7 @@ import {
   disableDesigner,
 } from "../../../service/designerApi";
 import * as XLSX from "xlsx";
+import DesignerDetailModal from "../DesignerDetailModal";
 
 const { Option } = Select;
 
@@ -30,6 +31,7 @@ const ManageDesignerTable = () => {
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
   const [isActionModalVisible, setIsActionModalVisible] = useState(false);
   const [selectedDesigner, setSelectedDesigner] = useState(null);
+  const [detailModalLoading, setDetailModalLoading] = useState(false);
 
   useEffect(() => {
     const fetchDesigners = async () => {
@@ -86,24 +88,30 @@ const ManageDesignerTable = () => {
 
   const showModal = async (designerId, isAction = false) => {
     try {
-      setLoading(true);
-      const data = await GetDetailForDesigner(designerId);
-      setSelectedDesigner(data.designer);
       if (isAction) {
+        setLoading(true);
+        const data = await GetDetailForDesigner(designerId);
+        setSelectedDesigner(data.designer);
         setIsActionModalVisible(true);
+        setLoading(false);
       } else {
+        setDetailModalLoading(true);
         setIsDetailModalVisible(true);
+        const data = await GetDetailForDesigner(designerId);
+        setSelectedDesigner(data.designer);
+        setDetailModalLoading(false);
       }
-      setLoading(false);
     } catch (error) {
       console.error("Failed to fetch designer details:", error);
       setLoading(false);
+      setDetailModalLoading(false);
     }
   };
 
   const handleModalClose = () => {
     setIsDetailModalVisible(false);
     setSelectedDesigner(null);
+    setDetailModalLoading(false);
   };
 
   const handleActionModalClose = () => {
@@ -151,7 +159,21 @@ const ManageDesignerTable = () => {
       title: "Name",
       dataIndex: ["userId", "displayName"],
       key: "name",
-      render: (text) => <a>{text}</a>,
+      render: (text, record) => (
+        <a 
+          style={{ 
+            color: '#667eea', 
+            fontWeight: '600',
+            cursor: 'pointer',
+            textDecoration: 'none'
+          }}
+          onClick={() => showModal(record._id)}
+          onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+          onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+        >
+          {text}
+        </a>
+      ),
     },
     {
       title: "Logo",
@@ -193,8 +215,16 @@ const ManageDesignerTable = () => {
       key: "actions",
       render: (text, record) => (
         <Space size="middle">
-          <Button type="link" onClick={() => showModal(record._id)}>
-            View
+          <Button 
+            type="primary" 
+            size="small"
+            onClick={() => showModal(record._id)}
+            style={{ 
+              borderRadius: '6px',
+              fontWeight: '500'
+            }}
+          >
+            View Details
           </Button>
           <Button
             type="link"
@@ -248,79 +278,12 @@ const ManageDesignerTable = () => {
         loading={loading}
         bordered
       />
-      <Modal
-        title="Designer Details"
+      <DesignerDetailModal
         visible={isDetailModalVisible}
-        onCancel={handleModalClose}
-        footer={[
-          <Button key="close" onClick={handleModalClose}>
-            Close
-          </Button>,
-        ]}
-      >
-        {selectedDesigner ? (
-          <div>
-            <Input
-              addonBefore="Name"
-              value={selectedDesigner.userId.displayName}
-              disabled
-            />
-            <Input
-              addonBefore="Email"
-              value={selectedDesigner.userId.email}
-              disabled
-              style={{ marginTop: "10px" }}
-            />
-            <Input
-              addonBefore="Phone Number"
-              value={selectedDesigner.userId.phoneNumber}
-              disabled
-              style={{ marginTop: "10px" }}
-            />
-            <Input
-              addonBefore="Address"
-              value={selectedDesigner.userId.address}
-              disabled
-              style={{ marginTop: "10px" }}
-            />
-            <Input
-              addonBefore="City"
-              value={selectedDesigner.userId.city}
-              disabled
-              style={{ marginTop: "10px" }}
-            />
-            <Input
-              addonBefore="State"
-              value={selectedDesigner.userId.state}
-              disabled
-              style={{ marginTop: "10px" }}
-            />
-            <Input
-              addonBefore="Pincode"
-              value={selectedDesigner.userId.pincode}
-              disabled
-              style={{ marginTop: "10px" }}
-            />
-            <Input.TextArea
-              addonBefore="Description"
-              value={selectedDesigner.shortDescription}
-              disabled
-              autoSize={{ minRows: 2, maxRows: 6 }}
-              style={{ marginTop: "10px" }}
-            />
-            <Input
-              addonBefore="Created At"
-              value={new Date(
-                selectedDesigner.createdTime
-              ).toLocaleDateString()}
-              disabled
-              style={{ marginTop: "10px" }}
-            />
-          </div>
-        ) : (
-          <p>Loading...</p>
-        )}
-      </Modal>
+        onClose={handleModalClose}
+        designer={selectedDesigner}
+        loading={detailModalLoading}
+      />
       {/* Action Modal */}
       <Modal
         title="Review Designer Application"
@@ -355,16 +318,44 @@ const ManageDesignerTable = () => {
               <Input value={selectedDesigner.userId.email} disabled />
             </Form.Item>
             <Form.Item label="Address">
-              <Input value={selectedDesigner.userId.address} disabled />
+              <Input 
+                value={
+                  typeof selectedDesigner.userId.address === 'object' 
+                    ? `${selectedDesigner.userId.address.street_details || ''}, ${selectedDesigner.userId.address.city || ''}, ${selectedDesigner.userId.address.state || ''}, ${selectedDesigner.userId.address.pincode || ''}`.replace(/^,\s*|,\s*$/g, '')
+                    : selectedDesigner.userId.address || 'Not provided'
+                } 
+                disabled 
+              />
             </Form.Item>
             <Form.Item label="State">
-              <Input value={selectedDesigner.userId.state} disabled />
+              <Input 
+                value={
+                  typeof selectedDesigner.userId.state === 'object' 
+                    ? JSON.stringify(selectedDesigner.userId.state)
+                    : selectedDesigner.userId.state || 'Not provided'
+                } 
+                disabled 
+              />
             </Form.Item>
             <Form.Item label="City">
-              <Input value={selectedDesigner.userId.city} disabled />
+              <Input 
+                value={
+                  typeof selectedDesigner.userId.city === 'object' 
+                    ? JSON.stringify(selectedDesigner.userId.city)
+                    : selectedDesigner.userId.city || 'Not provided'
+                } 
+                disabled 
+              />
             </Form.Item>
             <Form.Item label="Pincode">
-              <Input value={selectedDesigner.userId.pincode} disabled />
+              <Input 
+                value={
+                  typeof selectedDesigner.userId.pincode === 'object' 
+                    ? JSON.stringify(selectedDesigner.userId.pincode)
+                    : selectedDesigner.userId.pincode || 'Not provided'
+                } 
+                disabled 
+              />
             </Form.Item>
             <Form.Item label="About">
               <Input.TextArea

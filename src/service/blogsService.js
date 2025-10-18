@@ -1,17 +1,11 @@
-const API_BASE_URL = "https://indigo-rhapsody-backend-ten.vercel.app";
+import { apiCall } from "./apiUtils";
 
 // Get all blogs
 export const getBlogs = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/blogs/`, {
+    return await apiCall("/blogs/", {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message);
-    }
-    return await response.json();
   } catch (error) {
     throw new Error(error.message);
   }
@@ -20,16 +14,10 @@ export const getBlogs = async () => {
 // Create a new blog
 export const createBlog = async (blogData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/blogs/`, {
+    return await apiCall("/blogs/", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(blogData), // Include title, description, and image
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message);
-    }
-    return await response.json();
   } catch (error) {
     throw new Error(error.message);
   }
@@ -38,15 +26,9 @@ export const createBlog = async (blogData) => {
 // Get a blog by ID
 export const getBlogById = async (id) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/blogs/${id}`, {
+    return await apiCall(`/blogs/${id}`, {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message);
-    }
-    return await response.json();
   } catch (error) {
     throw new Error(error.message);
   }
@@ -55,16 +37,10 @@ export const getBlogById = async (id) => {
 // Update a blog by ID
 export const updateBlog = async (id, blogData) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/blogs/${id}`, {
+    return await apiCall(`/blogs/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(blogData), // Include title, description, image, and status
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message);
-    }
-    return await response.json();
   } catch (error) {
     throw new Error(error.message);
   }
@@ -73,15 +49,9 @@ export const updateBlog = async (id, blogData) => {
 // Delete a blog by ID
 export const deleteBlog = async (id) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/blogs/${id}`, {
+    return await apiCall(`/blogs/${id}`, {
       method: "DELETE",
-      headers: { "Content-Type": "application/json" },
     });
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message);
-    }
-    return await response.json();
   } catch (error) {
     throw new Error(error.message);
   }

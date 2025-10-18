@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Table, Button, Tag, Modal, Input, message } from "antd";
 import axios from "axios";
+import { API_BASE_URL } from "../../config/environment";
 
-const BASE_URL = "https://indigo-rhapsody-backend-ten.vercel.app";
+const BASE_URL = API_BASE_URL;
 
 const RequestTable = () => {
   const [loading, setLoading] = useState(true);

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ToastContainer } from "react-toastify";
 import { ThemeProvider } from "styled-components";
 import { GlobalStyles } from "./styles/global/GlobalStyles";
+import { initializeEnvironment } from "./config/env-validator";
 import Loginscreen from "./pages/loginScreen/LoginScreen";
 import {
   BrowserRouter as Router,
@@ -20,13 +21,23 @@ import CouponPage from "./pages/couponPage/couponPage";
 import ManageCategories from "./pages/manageCategories/manageCategories";
 import VideoContent from "./pages/videoContent/videoContent";
 import NotificationPage from "./pages/notifications/notificationPage";
-import ProtectedRoute from "../src/pages/loginScreen/protectedRoutes";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 import BannerPage from "./pages/content/bannerPage";
 import DesignerRequests from "./pages/designer-Requests/designerRequests";
 import BlogsPage from "./pages/blogs/blogsPage";
 import ManageQueries from "./pages/manageQueries/manageQueries";
+import OrdersPage from "./pages/orders/ordersPage";
 
 function App() {
+  // Initialize environment on app start
+  useEffect(() => {
+    try {
+      initializeEnvironment();
+    } catch (error) {
+      console.error('Failed to initialize environment:', error);
+    }
+  }, []);
+
   return (
     <ThemeProvider theme={theme}>
       <ToastContainer position="top-right" autoClose={2500} />
@@ -35,7 +46,6 @@ function App() {
         <Routes>
           {/* Public Route */}
           <Route path="/login" element={<Loginscreen />} />
-          <Route path="/" element={<Navigate to="/login" replace />} />
 
           {/* Protected Routes */}
           <Route
@@ -46,8 +56,10 @@ function App() {
               </ProtectedRoute>
             }
           >
+            <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<DashboardScreen />} />
             <Route path="/products" element={<ManageProducts />} />
+            <Route path="/orders" element={<OrdersPage />} />
             <Route path="/designers" element={<ManageDesignerScreen />} />
             <Route path="/users" element={<UserPage />} />
             <Route path="/payment" element={<PaymentPage />} />
