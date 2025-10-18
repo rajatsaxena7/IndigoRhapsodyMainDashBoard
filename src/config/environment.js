@@ -1,14 +1,14 @@
 // Environment Configuration
 const config = {
     production: {
-        API_BASE_URL: import.meta.env.VITE_API_BASE_URL_PRODUCTION || 'https://indigo-rhapsody-backend-ten.vercel.app',
+        API_BASE_URL: import.meta.env.VITE_API_BASE_URL_PRODUCTION,
         API_TIMEOUT: 30000,
         DEBUG: false,
         APP_NAME: 'Indigo Rhapsody Dashboard',
         VERSION: '1.0.0'
     },
     development: {
-        API_BASE_URL: import.meta.env.VITE_API_BASE_URL_DEVELOPMENT || 'https://indigo-rhapsody-backend-test.vercel.app',
+        API_BASE_URL: import.meta.env.VITE_API_BASE_URL_DEVELOPMENT,
         API_TIMEOUT: 30000,
         DEBUG: true,
         APP_NAME: 'Indigo Rhapsody Dashboard (Testing)',
@@ -61,7 +61,6 @@ const getCurrentEnvironment = () => {
         console.warn('📁 Please run: node scripts/switch-env.js production');
         console.warn('📁 Or create a .env file manually with:');
         console.warn('VITE_CURRENT_ENV=production');
-        console.warn('VITE_API_BASE_URL_PRODUCTION=https://indigo-rhapsody-backend-ten.vercel.app');
     }
 
     // Default to production
