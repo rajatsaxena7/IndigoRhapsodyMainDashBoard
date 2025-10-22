@@ -115,6 +115,7 @@ function BannerTable({ onDataUpdate }) {
   };
 
   const handleFileChange = ({ file }) => {
+    console.log("📁 File change detected:", file);
     if (file.status === "removed") {
       setFile(null);
     } else {
@@ -132,13 +133,18 @@ function BannerTable({ onDataUpdate }) {
       let webTabletUrl = currentBanner?.webTabletUrl || "";
 
       if (file) {
-        console.log("📤 Uploading image to Firebase...");
-        // Upload to Firebase and use the same URL for all platforms for now
-        const imageUrl = await uploadImageToFirebase(file, "banners");
-        console.log("✅ Image uploaded:", imageUrl);
-        mobileUrl = imageUrl;
-        webDesktopUrl = imageUrl;
-        webTabletUrl = imageUrl;
+        console.log("📤 Uploading image to Firebase...", { fileName: file.name, fileSize: file.size });
+        try {
+          // Upload to Firebase and use the same URL for all platforms for now
+          const imageUrl = await uploadImageToFirebase(file, "banners");
+          console.log("✅ Image uploaded successfully:", imageUrl);
+          mobileUrl = imageUrl;
+          webDesktopUrl = imageUrl;
+          webTabletUrl = imageUrl;
+        } catch (uploadError) {
+          console.error("❌ Image upload failed:", uploadError);
+          throw new Error(`Image upload failed: ${uploadError.message}`);
+        }
       } else if (modalType === "add" && !mobileUrl && !currentBanner?.mobileUrl) {
         throw new Error("Please upload an image.");
       }
@@ -695,22 +701,28 @@ function BannerTable({ onDataUpdate }) {
           >
             <Upload
               beforeUpload={(file) => {
+                console.log("📁 File selected for upload:", file);
                 const isImage = file.type.startsWith("image/");
                 if (!isImage) {
                   message.error("You can only upload image files!");
+                  return false;
                 }
                 const isLt2M = file.size / 1024 / 1024 < 2;
                 if (!isLt2M) {
                   message.error("Image must be smaller than 2MB!");
+                  return false;
                 }
                 if (isImage && isLt2M) {
+                  console.log("✅ Valid file selected:", file.name);
                   setFile(file);
                 }
-                return false;
+                return false; // Prevent automatic upload
               }}
               onChange={handleFileChange}
-              showUploadList={false}
+              showUploadList={true}
               accept="image/*"
+              listType="picture-card"
+              maxCount={1}
             >
               <div className="upload-area">
                 <UploadOutlined style={{ fontSize: 48, color: '#1890ff' }} />

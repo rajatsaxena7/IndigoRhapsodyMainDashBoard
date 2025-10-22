@@ -25,6 +25,7 @@ import { BannerContentWrap } from "./bannerPage.styles";
 import BannerTable from "../../components/content/BannerTable";
 import BlogsTable from "../../components/content/BlogsTable";
 import EnvironmentTest from "../../components/EnvironmentTest";
+import FirebaseTest from "../../components/FirebaseTest";
 import { GetBanners } from "../../service/bannerApi";
 import { getBlogs } from "../../service/blogsService";
 
@@ -148,6 +149,9 @@ const ContentManagement = () => {
 
       {/* Environment Test - Temporary for debugging */}
       <EnvironmentTest />
+      
+      {/* Firebase Test - Temporary for debugging */}
+      <FirebaseTest />
 
       {/* Content Tabs */}
       <Card className="content-card">
