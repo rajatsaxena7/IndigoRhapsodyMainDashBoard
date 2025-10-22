@@ -14,7 +14,7 @@ export const GetBanners = async () => {
 // Create new banner
 export const CreateBanner = async (bannerData) => {
   try {
-    return await apiCall("/banner/", {
+    return await apiCall("http://localhost:5000/banner/", {
       method: "POST",
       body: JSON.stringify(bannerData),
     });
