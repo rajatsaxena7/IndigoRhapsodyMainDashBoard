@@ -3,10 +3,14 @@ import { apiCall } from "./apiUtils";
 // Get all banners
 export const GetBanners = async () => {
   try {
-    return await apiCall("/banner/", {
+    console.log("🔍 API: Fetching banners from /banner/");
+    const result = await apiCall("/banner/", {
       method: "GET",
     });
+    console.log("📊 API: Banner fetch result:", result);
+    return result;
   } catch (error) {
+    console.error("❌ API: Error fetching banners:", error);
     throw new Error(error.message || "Failed to fetch banners");
   }
 };
@@ -14,11 +18,15 @@ export const GetBanners = async () => {
 // Create new banner
 export const CreateBanner = async (bannerData) => {
   try {
-    return await apiCall("/banner/", {
+    console.log("🔍 API: Creating banner with data:", bannerData);
+    const result = await apiCall("/banner/", {
       method: "POST",
       body: JSON.stringify(bannerData),
     });
+    console.log("📊 API: Banner creation result:", result);
+    return result;
   } catch (error) {
+    console.error("❌ API: Error creating banner:", error);
     throw new Error(error.message || "Failed to create banner");
   }
 };

@@ -24,6 +24,7 @@ import {
 import { BannerContentWrap } from "./bannerPage.styles";
 import BannerTable from "../../components/content/BannerTable";
 import BlogsTable from "../../components/content/BlogsTable";
+import EnvironmentTest from "../../components/EnvironmentTest";
 import { GetBanners } from "../../service/bannerApi";
 import { getBlogs } from "../../service/blogsService";
 
@@ -51,7 +52,16 @@ const ContentManagement = () => {
         getBlogs(),
       ]);
 
-      const banners = bannersData.banners || [];
+      // Handle different banner response structures
+      let banners = [];
+      if (Array.isArray(bannersData)) {
+        banners = bannersData;
+      } else if (bannersData && Array.isArray(bannersData.banners)) {
+        banners = bannersData.banners;
+      } else if (bannersData && Array.isArray(bannersData.data)) {
+        banners = bannersData.data;
+      }
+      
       const blogs = blogsData || [];
       const activeBanners = banners.filter(banner => banner.isActive !== false).length;
       const publishedBlogs = blogs.filter(blog => blog.status === 'published').length;
@@ -135,6 +145,9 @@ const ContentManagement = () => {
           </Card>
         </Col>
       </Row>
+
+      {/* Environment Test - Temporary for debugging */}
+      <EnvironmentTest />
 
       {/* Content Tabs */}
       <Card className="content-card">

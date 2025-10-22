@@ -19,6 +19,7 @@ import {
   Tooltip,
   Progress,
   Switch,
+  Select,
 } from "antd";
 import {
   UploadOutlined,
@@ -59,11 +60,23 @@ function BannerTable({ onDataUpdate }) {
   const fetchBanners = async () => {
     try {
       setLoading(true);
+      console.log("🔍 Fetching banners...");
       const data = await GetBanners();
-      setBanners(data.banners || []);
+      console.log("📊 Banner data received:", data);
+      // Handle different response structures
+      let banners = [];
+      if (Array.isArray(data)) {
+        banners = data;
+      } else if (data && Array.isArray(data.banners)) {
+        banners = data.banners;
+      } else if (data && Array.isArray(data.data)) {
+        banners = data.data;
+      }
+      console.log("📋 Processed banners:", banners);
+      setBanners(banners);
     } catch (error) {
-      console.error("Error fetching banners:", error);
-      message.error("Error fetching banners");
+      console.error("❌ Error fetching banners:", error);
+      message.error("Error fetching banners: " + (error.message || "Unknown error"));
     } finally {
       setLoading(false);
     }
@@ -76,6 +89,17 @@ function BannerTable({ onDataUpdate }) {
     if (banner) {
       form.setFieldsValue({
         name: banner.name,
+        title: banner.title,
+        subtitle: banner.subtitle,
+        description: banner.description,
+        platform: banner.platform,
+        page: banner.page,
+        actionUrl: banner.actionUrl,
+        displayOrder: banner.displayOrder,
+        buttonText: banner.buttonText,
+        buttonColor: banner.buttonColor,
+        textColor: banner.textColor,
+        tags: banner.tags,
         isActive: banner.isActive !== false,
       });
     } else {
@@ -101,26 +125,57 @@ function BannerTable({ onDataUpdate }) {
   const handleAddEdit = async (values) => {
     try {
       setUploading(true);
+      console.log("🚀 Starting banner creation/update...", { modalType, values });
 
-      let imageUrl = currentBanner?.image || "";
+      let mobileUrl = currentBanner?.mobileUrl || "";
+      let webDesktopUrl = currentBanner?.webDesktopUrl || "";
+      let webTabletUrl = currentBanner?.webTabletUrl || "";
 
       if (file) {
-        imageUrl = await uploadImageToFirebase(file, "banners");
-      } else if (modalType === "add" && !imageUrl) {
+        console.log("📤 Uploading image to Firebase...");
+        // Upload to Firebase and use the same URL for all platforms for now
+        const imageUrl = await uploadImageToFirebase(file, "banners");
+        console.log("✅ Image uploaded:", imageUrl);
+        mobileUrl = imageUrl;
+        webDesktopUrl = imageUrl;
+        webTabletUrl = imageUrl;
+      } else if (modalType === "add" && !mobileUrl && !currentBanner?.mobileUrl) {
         throw new Error("Please upload an image.");
       }
 
       const bannerData = {
         name: values.name,
-        imageUrl,
+        title: values.title || values.name,
+        subtitle: values.subtitle || "",
+        description: values.description || "",
+        platform: values.platform || "mobile",
+        page: values.page || "home",
+        actionType: values.actionType || "url",
+        actionUrl: values.actionUrl || "/",
+        displayOrder: values.displayOrder || 1,
         isActive: values.isActive,
+        startDate: values.startDate || new Date().toISOString(),
+        endDate: values.endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+        buttonText: values.buttonText || "Learn More",
+        buttonColor: values.buttonColor || "#1890ff",
+        textColor: values.textColor || "#FFFFFF",
+        tags: values.tags || ["featured"],
+        webDesktopUrl,
+        webTabletUrl,
+        mobileUrl,
       };
 
+      console.log("📋 Banner data to send:", bannerData);
+
       if (modalType === "add") {
-        await CreateBanner(bannerData);
+        console.log("➕ Creating new banner...");
+        const result = await CreateBanner(bannerData);
+        console.log("✅ Banner created successfully:", result);
         message.success("Banner added successfully");
       } else {
-        await UpdateBanner(currentBanner._id, bannerData);
+        console.log("✏️ Updating banner...");
+        const result = await UpdateBanner(currentBanner._id, bannerData);
+        console.log("✅ Banner updated successfully:", result);
         message.success("Banner updated successfully");
       }
 
@@ -128,7 +183,7 @@ function BannerTable({ onDataUpdate }) {
       if (onDataUpdate) onDataUpdate();
       handleCancel();
     } catch (error) {
-      console.error("Error saving banner:", error);
+      console.error("❌ Error saving banner:", error);
       message.error(error.message || "Error saving banner");
     } finally {
       setUploading(false);
@@ -178,7 +233,7 @@ function BannerTable({ onDataUpdate }) {
         <Space>
           <Avatar
             size={48}
-            src={record.image}
+            src={record.mobileUrl || record.webDesktopUrl || record.image}
             icon={<PictureOutlined />}
             style={{ backgroundColor: '#1890ff' }}
           />
@@ -187,6 +242,9 @@ function BannerTable({ onDataUpdate }) {
               {record.name}
             </div>
             <div style={{ fontSize: '12px', color: '#666' }}>
+              {record.title}
+            </div>
+            <div style={{ fontSize: '10px', color: '#999' }}>
               ID: {record._id?.substring(0, 8)}...
             </div>
           </div>
@@ -195,15 +253,16 @@ function BannerTable({ onDataUpdate }) {
     },
     {
       title: "Image Preview",
-      dataIndex: "image",
-      key: "image",
-      render: (imageUrl) => (
-        imageUrl ? (
+      dataIndex: "mobileUrl",
+      key: "mobileUrl",
+      render: (imageUrl, record) => {
+        const displayUrl = imageUrl || record.webDesktopUrl || record.webTabletUrl || record.image;
+        return displayUrl ? (
           <Tooltip title="Click to view full image">
             <Image
               width={80}
               height={60}
-              src={imageUrl}
+              src={displayUrl}
               alt="Banner"
               style={{ borderRadius: 8, objectFit: 'cover' }}
               fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMIAAADDCAYAAADQvc6UAAABRWlDQ1BJQ0MgUHJvZmlsZQAAKJFjYGASSSwoyGFhYGDIzSspCnJ3UoiIjFJgf8LAwSDCIMogwMCcmFxc4BgQ4ANUwgCjUcG3awyMIPqyLsis7PPOq3QdDFcvjV3jOD1boQVTPQrgSkktTgbSf4A4LbmgqISBgTEFyFYuLykAsTuAbJEioKOA7DkgdjqEvQHEToKwj4DVhAQ5A9k3gGyB5IxEoBmML4BsnSQk8XQkNtReEOBxcfXxUQg1Mjc0dyHgXNJBSWpFCYh2zi+oLMpMzyhRcASGUqqCZ16yno6CkYGRAQMDKMwhqj/fAIcloxgHQqxAjIHBEugw5sUIsSQpBobtQPdLciLEVJYzMPBHMDBsayhILEqEO4DxG0txmrERhM29nYGBddr//5/DGRjYNRkY/l7////39v///y4Dmn+LgeHANwDrkl1AuO+pmgAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAwqADAAQAAAABAAAAwwAAAAD9b/HnAAAHlklEQVR4Ae3dP3Ik1RnG4W+FgYxN"
@@ -222,8 +281,8 @@ function BannerTable({ onDataUpdate }) {
           }}>
             <PictureOutlined style={{ fontSize: 24 }} />
           </div>
-        )
-      ),
+        );
+      },
     },
     {
       title: "Status",
@@ -285,14 +344,23 @@ function BannerTable({ onDataUpdate }) {
                   content: (
                     <div>
                       <p><strong>Name:</strong> {record.name}</p>
+                      <p><strong>Title:</strong> {record.title}</p>
+                      <p><strong>Subtitle:</strong> {record.subtitle}</p>
+                      <p><strong>Description:</strong> {record.description}</p>
+                      <p><strong>Platform:</strong> {record.platform}</p>
+                      <p><strong>Page:</strong> {record.page}</p>
+                      <p><strong>Action URL:</strong> {record.actionUrl}</p>
+                      <p><strong>Button Text:</strong> {record.buttonText}</p>
+                      <p><strong>Display Order:</strong> {record.displayOrder}</p>
                       <p><strong>Status:</strong> {record.isActive !== false ? 'Active' : 'Inactive'}</p>
+                      <p><strong>Tags:</strong> {record.tags?.join(', ')}</p>
                       <p><strong>Created:</strong> {new Date(record.createdDate).toLocaleString()}</p>
-                      {record.image && (
+                      {(record.mobileUrl || record.webDesktopUrl || record.image) && (
                         <div>
                           <p><strong>Image:</strong></p>
                           <Image
                             width={300}
-                            src={record.image}
+                            src={record.mobileUrl || record.webDesktopUrl || record.image}
                             alt={record.name}
                             style={{ borderRadius: 8 }}
                           />
@@ -424,24 +492,185 @@ function BannerTable({ onDataUpdate }) {
         open={isModalVisible}
         onCancel={handleCancel}
         footer={null}
-        width={600}
+        width={800}
         className="modern-modal"
       >
         <Form form={form} layout="vertical" onFinish={handleAddEdit}>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="name"
+                label="Banner Name"
+                rules={[
+                  { required: true, message: "Please enter the banner name" },
+                  { min: 2, message: "Banner name must be at least 2 characters" }
+                ]}
+              >
+                <Input 
+                  placeholder="Enter banner name..."
+                  size="large"
+                  style={{ borderRadius: 8 }}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="title"
+                label="Banner Title"
+                rules={[
+                  { required: true, message: "Please enter the banner title" }
+                ]}
+              >
+                <Input 
+                  placeholder="Enter banner title..."
+                  size="large"
+                  style={{ borderRadius: 8 }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="subtitle"
+                label="Subtitle"
+              >
+                <Input 
+                  placeholder="Enter subtitle..."
+                  size="large"
+                  style={{ borderRadius: 8 }}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="buttonText"
+                label="Button Text"
+                initialValue="Shop Now"
+              >
+                <Input 
+                  placeholder="Enter button text..."
+                  size="large"
+                  style={{ borderRadius: 8 }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
           <Form.Item
-            name="name"
-            label="Banner Name"
-            rules={[
-              { required: true, message: "Please enter the banner name" },
-              { min: 2, message: "Banner name must be at least 2 characters" }
-            ]}
+            name="description"
+            label="Description"
           >
-            <Input 
-              placeholder="Enter banner name..."
-              size="large"
+            <Input.TextArea 
+              placeholder="Enter banner description..."
+              rows={3}
               style={{ borderRadius: 8 }}
             />
           </Form.Item>
+
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item
+                name="platform"
+                label="Platform"
+                initialValue="mobile"
+              >
+                <Select size="large" style={{ borderRadius: 8 }}>
+                  <Select.Option value="mobile">Mobile</Select.Option>
+                  <Select.Option value="web">Web</Select.Option>
+                  <Select.Option value="all">All Platforms</Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item
+                name="page"
+                label="Page"
+                initialValue="home"
+              >
+                <Select size="large" style={{ borderRadius: 8 }}>
+                  <Select.Option value="home">Home</Select.Option>
+                  <Select.Option value="products">Products</Select.Option>
+                  <Select.Option value="category">Category</Select.Option>
+                  <Select.Option value="all">All Pages</Select.Option>
+                </Select>
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item
+                name="displayOrder"
+                label="Display Order"
+                initialValue={1}
+              >
+                <Input 
+                  type="number"
+                  placeholder="1"
+                  size="large"
+                  style={{ borderRadius: 8 }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="actionUrl"
+                label="Action URL"
+                initialValue="/"
+              >
+                <Input 
+                  placeholder="/products?category=summer"
+                  size="large"
+                  style={{ borderRadius: 8 }}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="tags"
+                label="Tags"
+                initialValue={["featured"]}
+              >
+                <Select
+                  mode="tags"
+                  placeholder="Enter tags..."
+                  size="large"
+                  style={{ borderRadius: 8 }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="buttonColor"
+                label="Button Color"
+                initialValue="#1890ff"
+              >
+                <Input 
+                  type="color"
+                  size="large"
+                  style={{ borderRadius: 8 }}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="textColor"
+                label="Text Color"
+                initialValue="#FFFFFF"
+              >
+                <Input 
+                  type="color"
+                  size="large"
+                  style={{ borderRadius: 8 }}
+                />
+              </Form.Item>
+            </Col>
+          </Row>
           
           <Form.Item
             name="isActive"
@@ -496,12 +725,12 @@ function BannerTable({ onDataUpdate }) {
                 <Tag color="blue">{file.name}</Tag>
               </div>
             )}
-            {modalType === "edit" && currentBanner?.image && !file && (
+            {modalType === "edit" && (currentBanner?.mobileUrl || currentBanner?.webDesktopUrl || currentBanner?.image) && !file && (
               <div style={{ marginTop: 8 }}>
                 <Text type="secondary">Current image:</Text>
                 <Image
                   width={100}
-                  src={currentBanner.image}
+                  src={currentBanner.mobileUrl || currentBanner.webDesktopUrl || currentBanner.image}
                   alt="Current Banner"
                   style={{ marginTop: 8, borderRadius: 8 }}
                 />
