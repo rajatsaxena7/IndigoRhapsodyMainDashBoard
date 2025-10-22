@@ -60,11 +60,23 @@ function BannerTable({ onDataUpdate }) {
   const fetchBanners = async () => {
     try {
       setLoading(true);
+      console.log("🔍 Fetching banners...");
       const data = await GetBanners();
-      setBanners(data.banners || []);
+      console.log("📊 Banner data received:", data);
+      // Handle different response structures
+      let banners = [];
+      if (Array.isArray(data)) {
+        banners = data;
+      } else if (data && Array.isArray(data.banners)) {
+        banners = data.banners;
+      } else if (data && Array.isArray(data.data)) {
+        banners = data.data;
+      }
+      console.log("📋 Processed banners:", banners);
+      setBanners(banners);
     } catch (error) {
-      console.error("Error fetching banners:", error);
-      message.error("Error fetching banners");
+      console.error("❌ Error fetching banners:", error);
+      message.error("Error fetching banners: " + (error.message || "Unknown error"));
     } finally {
       setLoading(false);
     }
@@ -113,14 +125,17 @@ function BannerTable({ onDataUpdate }) {
   const handleAddEdit = async (values) => {
     try {
       setUploading(true);
+      console.log("🚀 Starting banner creation/update...", { modalType, values });
 
       let mobileUrl = currentBanner?.mobileUrl || "";
       let webDesktopUrl = currentBanner?.webDesktopUrl || "";
       let webTabletUrl = currentBanner?.webTabletUrl || "";
 
       if (file) {
+        console.log("📤 Uploading image to Firebase...");
         // Upload to Firebase and use the same URL for all platforms for now
         const imageUrl = await uploadImageToFirebase(file, "banners");
+        console.log("✅ Image uploaded:", imageUrl);
         mobileUrl = imageUrl;
         webDesktopUrl = imageUrl;
         webTabletUrl = imageUrl;
@@ -150,11 +165,17 @@ function BannerTable({ onDataUpdate }) {
         mobileUrl,
       };
 
+      console.log("📋 Banner data to send:", bannerData);
+
       if (modalType === "add") {
-        await CreateBanner(bannerData);
+        console.log("➕ Creating new banner...");
+        const result = await CreateBanner(bannerData);
+        console.log("✅ Banner created successfully:", result);
         message.success("Banner added successfully");
       } else {
-        await UpdateBanner(currentBanner._id, bannerData);
+        console.log("✏️ Updating banner...");
+        const result = await UpdateBanner(currentBanner._id, bannerData);
+        console.log("✅ Banner updated successfully:", result);
         message.success("Banner updated successfully");
       }
 
@@ -162,7 +183,7 @@ function BannerTable({ onDataUpdate }) {
       if (onDataUpdate) onDataUpdate();
       handleCancel();
     } catch (error) {
-      console.error("Error saving banner:", error);
+      console.error("❌ Error saving banner:", error);
       message.error(error.message || "Error saving banner");
     } finally {
       setUploading(false);
