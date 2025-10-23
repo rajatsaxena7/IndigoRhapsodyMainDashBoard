@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Table, Button, Tag, Modal, Input, message } from "antd";
-import axios from "axios";
-import { API_BASE_URL } from "../../config/environment";
-
-const BASE_URL = API_BASE_URL;
+import { apiCall } from "../../service/apiUtils";
 
 const RequestTable = () => {
   const [loading, setLoading] = useState(true);
@@ -37,17 +34,28 @@ const RequestTable = () => {
   const fetchRequests = async () => {
     setLoading(true);
     try {
-      const { data } = await axios.get(
-        `${BASE_URL}/designer/update-requests/latest`
-      );
+      console.log("🔍 Fetching designer update requests...");
+      const data = await apiCall("/designer/update-requests/latest", {
+        method: "GET",
+      });
 
-      // Array safety
-      const raw = Array.isArray(data.updateRequests) ? data.updateRequests : [];
+      console.log("📊 Designer requests data received:", data);
+      
+      // Array safety - handle different response structures
+      let raw = [];
+      if (Array.isArray(data)) {
+        raw = data;
+      } else if (data && Array.isArray(data.updateRequests)) {
+        raw = data.updateRequests;
+      } else if (data && Array.isArray(data.data)) {
+        raw = data.data;
+      }
 
+      console.log("📋 Processed requests:", raw);
       setData(raw.map(normaliseRow));
     } catch (err) {
-      console.error("Error fetching requests:", err);
-      message.error("Failed to fetch requests");
+      console.error("❌ Error fetching requests:", err);
+      message.error("Failed to fetch requests: " + (err.message || "Unknown error"));
     } finally {
       setLoading(false);
     }
@@ -55,18 +63,24 @@ const RequestTable = () => {
 
   const reviewRequest = async (requestId, status) => {
     try {
-      await axios.put(`${BASE_URL}/designer/review/${requestId}`, {
-        status,
-        adminComments,
+      console.log("🔍 Reviewing designer request:", { requestId, status, adminComments });
+      const result = await apiCall(`/designer/review/${requestId}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          status,
+          adminComments,
+        }),
       });
+      
+      console.log("✅ Request review result:", result);
       message.success(`Request ${status.toLowerCase()} successfully!`);
       fetchRequests(); // refresh list
       setIsModalVisible(false);
       setAdminComments("");
       setSelectedRequest(null);
     } catch (err) {
-      console.error("Error reviewing request:", err);
-      message.error("Failed to review request");
+      console.error("❌ Error reviewing request:", err);
+      message.error("Failed to review request: " + (err.message || "Unknown error"));
     }
   };
 
