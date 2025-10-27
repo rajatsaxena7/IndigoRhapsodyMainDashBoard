@@ -115,7 +115,18 @@ function ManageUserTable() {
         dataSource={users}
         rowKey="_id"
         loading={loading}
-        pagination={{ pageSize: 10 }}
+        pagination={{ 
+          pageSize: 10,
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} users`,
+          pageSizeOptions: ['5', '10', '20', '50'],
+          size: 'default',
+          position: ['bottomRight'],
+          showLessItems: false,
+          hideOnSinglePage: false,
+          responsive: true
+        }}
         bordered
       />
     </ManageUserTableWrap>
