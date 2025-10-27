@@ -114,26 +114,30 @@ function BannerTable({ onDataUpdate }) {
     setFile(null);
   };
 
-  const handleFileChange = ({ file }) => {
-    console.log("📁 File change detected:", file);
-    if (file.status === "removed") {
-      setFile(null);
+  const handleFileChange = ({ fileList }) => {
+    if (fileList.length > 0) {
+      setFile(fileList[0].originFileObj);
     } else {
-      setFile(file.originFileObj);
+      setFile(null);
     }
   };
 
   const handleAddEdit = async (values) => {
     try {
       setUploading(true);
-      console.log("🚀 Starting banner creation/update...", { modalType, values });
+      console.log("🚀 Starting banner creation/update...", { 
+        modalType, 
+        values, 
+        file: file ? { name: file.name, size: file.size, type: file.type } : "No file",
+        fileState: file
+      });
 
       let mobileUrl = currentBanner?.mobileUrl || "";
       let webDesktopUrl = currentBanner?.webDesktopUrl || "";
       let webTabletUrl = currentBanner?.webTabletUrl || "";
 
       if (file) {
-        console.log("📤 Uploading image to Firebase...", { fileName: file.name, fileSize: file.size });
+        console.log("📤 Uploading image to Firebase...", { fileName: file.name, fileSize: file.size, fileType: file.type });
         try {
           // Upload to Firebase and use the same URL for all platforms for now
           const imageUrl = await uploadImageToFirebase(file, "banners");
@@ -145,8 +149,11 @@ function BannerTable({ onDataUpdate }) {
           console.error("❌ Image upload failed:", uploadError);
           throw new Error(`Image upload failed: ${uploadError.message}`);
         }
-      } else if (modalType === "add" && !mobileUrl && !currentBanner?.mobileUrl) {
-        throw new Error("Please upload an image.");
+      } else if (modalType === "add") {
+        console.error("❌ No file selected for new banner");
+        throw new Error("Please upload an image for the banner.");
+      } else {
+        console.log("ℹ️ Edit mode - using existing image URLs");
       }
 
       const bannerData = {
@@ -473,10 +480,16 @@ function BannerTable({ onDataUpdate }) {
             dataSource={banners}
             rowKey="_id"
             pagination={{
-              pageSize: 8,
+              pageSize: 10,
               showSizeChanger: true,
               showQuickJumper: true,
-              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} banners`
+              showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} banners`,
+              pageSizeOptions: ['5', '10', '20', '50'],
+              size: 'default',
+              position: ['bottomRight'],
+              showLessItems: false,
+              hideOnSinglePage: false,
+              responsive: true
             }}
             className="modern-table"
           />
@@ -699,39 +712,20 @@ function BannerTable({ onDataUpdate }) {
               },
             ]}
           >
-            <Upload
-              beforeUpload={(file) => {
-                console.log("📁 File selected for upload:", file);
-                const isImage = file.type.startsWith("image/");
-                if (!isImage) {
-                  message.error("You can only upload image files!");
-                  return false;
-                }
-                const isLt2M = file.size / 1024 / 1024 < 2;
-                if (!isLt2M) {
-                  message.error("Image must be smaller than 2MB!");
-                  return false;
-                }
-                if (isImage && isLt2M) {
-                  console.log("✅ Valid file selected:", file.name);
-                  setFile(file);
-                }
-                return false; // Prevent automatic upload
-              }}
-              onChange={handleFileChange}
-              showUploadList={true}
-              accept="image/*"
-              listType="picture-card"
-              maxCount={1}
-            >
-              <div className="upload-area">
-                <UploadOutlined style={{ fontSize: 48, color: '#1890ff' }} />
-                <div style={{ marginTop: 8 }}>
-                  <Text strong>Click to upload image</Text>
-                </div>
-                <Text type="secondary">Support for JPG, PNG, GIF up to 2MB</Text>
-              </div>
-            </Upload>
+           <Upload
+  listType="picture-card"
+  maxCount={1}
+  accept="image/*"
+  beforeUpload={() => false} // prevent auto-upload
+  onChange={handleFileChange}
+  showUploadList={true}
+>
+  <div>
+    <UploadOutlined style={{ fontSize: 48, color: '#1890ff' }} />
+    <div style={{ marginTop: 8 }}>Click to upload image</div>
+  </div>
+</Upload>
+
             {file && (
               <div style={{ marginTop: 8 }}>
                 <Tag color="blue">{file.name}</Tag>

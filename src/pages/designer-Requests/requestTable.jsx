@@ -24,6 +24,8 @@ const RequestTable = () => {
       displayName: user?.displayName ?? fallback?.displayName ?? "Unknown",
       email: user?.email ?? fallback?.email ?? "N/A",
       phoneNumber: user?.phoneNumber ?? fallback?.phoneNumber ?? "N/A",
+      // Handle different possible date field names
+      createdAt: req.requestTime || req.createdAt || req.createdDate || req.date || req.timestamp,
     };
   };
 
@@ -97,9 +99,23 @@ const RequestTable = () => {
    * ------------------------------------------------------------------ */
 
   const columns = [
-    { title: "Designer Name", dataIndex: "displayName", key: "displayName" },
-    { title: "Email", dataIndex: "email", key: "email" },
-    { title: "Phone", dataIndex: "phoneNumber", key: "phoneNumber" },
+    { 
+      title: "Designer Name", 
+      dataIndex: "displayName", 
+      key: "displayName",
+      sorter: (a, b) => a.displayName.localeCompare(b.displayName),
+    },
+    { 
+      title: "Email", 
+      dataIndex: "email", 
+      key: "email",
+      sorter: (a, b) => a.email.localeCompare(b.email),
+    },
+    { 
+      title: "Phone", 
+      dataIndex: "phoneNumber", 
+      key: "phoneNumber",
+    },
     {
       title: "Status",
       dataIndex: "status",
@@ -117,6 +133,37 @@ const RequestTable = () => {
           {status}
         </Tag>
       ),
+      filters: [
+        { text: "Pending", value: "Pending" },
+        { text: "Approved", value: "Approved" },
+        { text: "Rejected", value: "Rejected" },
+      ],
+      onFilter: (value, record) => record.status === value,
+    },
+    {
+      title: "Request Date",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      render: (date) => {
+        if (!date) return "N/A";
+        const requestDate = new Date(date);
+        return (
+          <div>
+            <div style={{ fontWeight: 500 }}>
+              {requestDate.toLocaleDateString()}
+            </div>
+            <div style={{ fontSize: '12px', color: '#666' }}>
+              {requestDate.toLocaleTimeString()}
+            </div>
+          </div>
+        );
+      },
+      sorter: (a, b) => {
+        const dateA = new Date(a.createdAt || 0);
+        const dateB = new Date(b.createdAt || 0);
+        return dateA - dateB;
+      },
+      defaultSortOrder: 'descend',
     },
     {
       title: "Actions",
@@ -149,7 +196,20 @@ const RequestTable = () => {
         columns={columns}
         loading={loading}
         rowKey="_id"
-        pagination={{ pageSize: 8 }}
+        pagination={{ 
+          pageSize: 10,
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} requests`,
+          pageSizeOptions: ['5', '10', '20', '50', '100'],
+          size: 'default',
+          position: ['bottomRight'],
+          showLessItems: false,
+          hideOnSinglePage: false,
+          responsive: true,
+          simple: false
+        }}
+        defaultSortOrder="descend"
       />
 
       {/* ---------- Review Modal ---------- */}

@@ -27,8 +27,6 @@ import {
   UserOutlined,
   TeamOutlined,
   EyeOutlined,
-  EditOutlined,
-  DeleteOutlined,
   PlusOutlined,
   ReloadOutlined,
   FilterOutlined,
@@ -302,20 +300,6 @@ const UserPage = () => {
               style={{ color: '#1890ff' }}
             />
           </Tooltip>
-          <Tooltip title="Edit User">
-            <Button
-              type="text"
-              icon={<EditOutlined />}
-              style={{ color: '#52c41a' }}
-            />
-          </Tooltip>
-          <Tooltip title="Delete User">
-            <Button
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
-            />
-          </Tooltip>
         </Space>
       ),
     },
@@ -574,7 +558,7 @@ const UserPage = () => {
                 View All Users ({stats.total})
               </Button>
               <Button 
-                icon={<EditOutlined />}
+                icon={<TeamOutlined />}
                 block
                 size="large"
                 style={{ marginBottom: 12 }}
@@ -582,7 +566,7 @@ const UserPage = () => {
                 Manage Active Users
               </Button>
               <Button 
-                icon={<DeleteOutlined />}
+                icon={<ExclamationCircleOutlined />}
                 danger
                 block
                 size="large"
@@ -666,7 +650,7 @@ const UserPage = () => {
           <Button key="close" onClick={() => setIsDetailModalVisible(false)}>
             Close
           </Button>,
-          <Button key="edit" type="primary" icon={<EditOutlined />}>
+          <Button key="edit" type="primary" icon={<TeamOutlined />}>
             Edit User
           </Button>,
         ]}
