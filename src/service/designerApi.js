@@ -94,3 +94,18 @@ export const getAllDesignersForFilter = async () => {
     throw new Error(error.message || 'Failed to fetch designers');
   }
 };
+
+// Upload product sample images for a designer
+export const uploadProductSampleImages = async (designerId, imageUrls) => {
+  try {
+    return await apiCall(`/designer/${designerId}/product-sample-images`, {
+      method: "POST",
+      body: JSON.stringify({ imageUrls }),
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(error.message);
+    }
+    throw error;
+  }
+};

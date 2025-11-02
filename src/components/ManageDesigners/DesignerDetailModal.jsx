@@ -1,5 +1,5 @@
-import React from "react";
-import { Modal, Button, Tag, Avatar, Divider, Row, Col, Typography, Space } from "antd";
+import React, { useState, useEffect } from "react";
+import { Modal, Button, Tag, Avatar, Divider, Row, Col, Typography, Space, Upload, message } from "antd";
 import { 
   UserOutlined, 
   MailOutlined, 
@@ -8,9 +8,12 @@ import {
   CalendarOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  CloseOutlined
+  CloseOutlined,
+  UploadOutlined
 } from "@ant-design/icons";
 import styled from "styled-components";
+import { uploadImageToFirebase } from "../../service/FirebaseService";
+import { uploadProductSampleImages } from "../../service/designerApi";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -18,8 +21,20 @@ const DesignerDetailModal = ({
   visible, 
   onClose, 
   designer, 
-  loading = false 
+  loading = false,
+  onImageUploadSuccess
 }) => {
+  const [uploading, setUploading] = useState(false);
+  const [fileList, setFileList] = useState([]);
+
+  // Reset file list when modal closes
+  useEffect(() => {
+    if (!visible) {
+      setFileList([]);
+      setUploading(false);
+    }
+  }, [visible]);
+
   if (!designer) return null;
 
   const formatDate = (dateString) => {
@@ -65,6 +80,57 @@ const DesignerDetailModal = ({
     if (typeof value === 'object') return JSON.stringify(value);
     return String(value);
   };
+
+  // Handle file selection
+  const handleFileChange = ({ fileList }) => {
+    setFileList(fileList);
+  };
+
+  // Handle image upload to Firebase and API
+  const handleUploadImages = async () => {
+    if (fileList.length === 0) {
+      message.warning("Please select at least one image to upload");
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const imageUrls = [];
+
+      // Upload each image to Firebase
+      for (const fileItem of fileList) {
+        const file = fileItem.originFileObj || fileItem;
+        if (file) {
+          console.log("📤 Uploading image to Firebase...", { fileName: file.name });
+          const imageUrl = await uploadImageToFirebase(file, "designer-product-samples");
+          imageUrls.push(imageUrl);
+          console.log("✅ Image uploaded:", imageUrl);
+        }
+      }
+
+      // Send image URLs to API
+      console.log("📡 Sending image URLs to API...", { designerId: designer._id, imageUrls });
+      await uploadProductSampleImages(designer._id, imageUrls);
+      
+      message.success(`Successfully uploaded ${imageUrls.length} image(s)`);
+      
+      // Clear file list
+      setFileList([]);
+      
+      // Call success callback if provided
+      if (onImageUploadSuccess) {
+        onImageUploadSuccess();
+      }
+    } catch (error) {
+      console.error("❌ Error uploading images:", error);
+      message.error(error.message || "Failed to upload images");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Get existing product sample images (if available in designer object)
+  const existingImages = designer.productSampleImages || designer.product_sample_images || [];
 
   return (
     <StyledModal
@@ -212,6 +278,78 @@ const DesignerDetailModal = ({
               </Section>
             </>
           )}
+
+          {/* Product Sample Images Section */}
+          <Divider />
+          <Section>
+            <SectionTitle>
+              <UploadOutlined style={{ marginRight: '8px' }} />
+              Product Sample Images (Cover Images)
+            </SectionTitle>
+            
+            {/* Upload Component */}
+            <UploadSection>
+              <Upload
+                listType="picture-card"
+                multiple
+                accept="image/*"
+                fileList={fileList}
+                beforeUpload={() => false} // Prevent auto-upload
+                onChange={handleFileChange}
+                showUploadList={{
+                  showRemoveIcon: true,
+                  showPreviewIcon: true,
+                }}
+              >
+                {fileList.length >= 8 ? null : (
+                  <div>
+                    <UploadOutlined style={{ fontSize: 24, color: '#1890ff' }} />
+                    <div style={{ marginTop: 8, color: '#666' }}>
+                      Upload Images
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#999', marginTop: 4 }}>
+                      Max 8 images
+                    </div>
+                  </div>
+                )}
+              </Upload>
+              
+              {fileList.length > 0 && (
+                <UploadButtonContainer>
+                  <Button
+                    type="primary"
+                    icon={<UploadOutlined />}
+                    onClick={handleUploadImages}
+                    loading={uploading}
+                    size="large"
+                  >
+                    Upload {fileList.length} Image{fileList.length > 1 ? 's' : ''}
+                  </Button>
+                </UploadButtonContainer>
+              )}
+            </UploadSection>
+
+            {/* Existing Images Display */}
+            {existingImages.length > 0 && (
+              <ExistingImagesSection>
+                <Text type="secondary" style={{ display: 'block', marginBottom: '12px' }}>
+                  Existing Product Sample Images:
+                </Text>
+                <Row gutter={[16, 16]}>
+                  {existingImages.map((imageUrl, index) => (
+                    <Col xs={12} sm={8} md={6} key={index}>
+                      <ImagePreviewCard>
+                        <ProductSampleImage 
+                          src={imageUrl} 
+                          alt={`Product sample ${index + 1}`}
+                        />
+                      </ImagePreviewCard>
+                    </Col>
+                  ))}
+                </Row>
+              </ExistingImagesSection>
+            )}
+          </Section>
 
           {/* Footer Actions */}
           <Divider />
@@ -365,6 +503,59 @@ const LoadingSpinner = styled.div`
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
   }
+`;
+
+const UploadSection = styled.div`
+  margin-bottom: 24px;
+  
+  .ant-upload-list-picture-card .ant-upload-list-item {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .ant-upload-select-picture-card {
+    width: 120px;
+    height: 120px;
+    border: 2px dashed #d9d9d9;
+    border-radius: 8px;
+    transition: all 0.3s;
+    
+    &:hover {
+      border-color: #1890ff;
+    }
+  }
+`;
+
+const UploadButtonContainer = styled.div`
+  margin-top: 16px;
+  text-align: center;
+`;
+
+const ExistingImagesSection = styled.div`
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #e9ecef;
+`;
+
+const ImagePreviewCard = styled.div`
+  background: #f8f9fa;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  overflow: hidden;
+  transition: all 0.3s;
+  
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+`;
+
+const ProductSampleImage = styled.img`
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 4px;
 `;
 
 export default DesignerDetailModal;
