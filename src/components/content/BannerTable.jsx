@@ -161,7 +161,7 @@ function BannerTable({ onDataUpdate }) {
         title: values.title || values.name,
         subtitle: values.subtitle || "",
         description: values.description || "",
-        platform: values.platform || "mobile",
+        platform: values.platform === "all" ? "both" : (values.platform || "mobile"),
         page: values.page || "home",
         actionType: values.actionType || "url",
         actionUrl: values.actionUrl || "/",
